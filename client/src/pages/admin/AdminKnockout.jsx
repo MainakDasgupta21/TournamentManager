@@ -1,0 +1,206 @@
+import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { GitBranch, Lock, Wand2, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
+import { useTeams, useKnockout, useKnockoutMutations } from '@/hooks/queries';
+import { apiError } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import Bracket from '@/components/Bracket';
+import { ErrorState, Skeleton } from '@/components/ui/misc';
+import { useConfirm } from '@/components/ui/confirm';
+
+function GenerateCard({ tournament, tournamentId, hasBracket, locked }) {
+  const { generate } = useKnockoutMutations(tournamentId);
+  const confirm = useConfirm();
+  const [opts, setOpts] = useState({
+    format: 'single-elimination',
+    qualifiersPerGroup: tournament.groupSettings?.qualifiersPerGroup ?? 2,
+    thirdPlacePlayoff: false,
+    startDate: '',
+    daysBetweenRounds: 3,
+  });
+  const isPlayoff = opts.format === 'playoff';
+
+  const run = async () => {
+    if (hasBracket) {
+      const ok = await confirm({
+        title: 'Regenerate the bracket?',
+        description:
+          'This rebuilds the knockout bracket from the current standings, discarding the existing bracket and any results in it.',
+        confirmLabel: 'Regenerate',
+      });
+      if (!ok) return;
+    }
+    try {
+      await generate.mutateAsync({
+        format: opts.format,
+        qualifiersPerGroup: isPlayoff ? 4 : Number(opts.qualifiersPerGroup),
+        thirdPlacePlayoff: isPlayoff ? false : opts.thirdPlacePlayoff,
+        startDate: opts.startDate ? new Date(opts.startDate).toISOString() : undefined,
+        daysBetweenRounds: Number(opts.daysBetweenRounds),
+      });
+      toast.success('Bracket generated from standings');
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Wand2 className="h-4 w-4" /> Generate knockout bracket</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
+          <Label>Format</Label>
+          <Select value={opts.format} onValueChange={(v) => setOpts({ ...opts, format: v })}>
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="single-elimination">Single elimination</SelectItem>
+              <SelectItem value="playoff">IPL-style playoffs (top 4)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {!isPlayoff && (
+          <div className="space-y-1.5">
+            <Label>Qualifiers / group</Label>
+            <Input type="number" min={1} value={opts.qualifiersPerGroup} onChange={(e) => setOpts({ ...opts, qualifiersPerGroup: e.target.value })} className="w-32" />
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <Label>First match date</Label>
+          <Input type="date" value={opts.startDate} onChange={(e) => setOpts({ ...opts, startDate: e.target.value })} className="w-44" />
+        </div>
+        {!isPlayoff && (
+          <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+            <span className="text-sm">3rd-place playoff</span>
+            <Switch checked={opts.thirdPlacePlayoff} onCheckedChange={(v) => setOpts({ ...opts, thirdPlacePlayoff: v })} />
+          </div>
+        )}
+        <Button onClick={run} disabled={generate.isPending || locked} variant={hasBracket ? 'outline' : 'default'}>
+          <GitBranch /> {hasBracket ? 'Regenerate' : 'Generate bracket'}
+        </Button>
+        {isPlayoff && (
+          <p className="w-full text-xs text-muted-foreground">
+            Top 4 advance: Qualifier 1 (1 v 2) and Eliminator (3 v 4), then Qualifier 2, then the Final. The top two seeds get a second chance.
+          </p>
+        )}
+        {locked && <p className="text-xs text-muted-foreground">Bracket is locked — unlock not permitted.</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Editable seeding for round 1 matchups (only when unlocked). */
+function AdjustPanel({ tournamentId, bracket, teams }) {
+  const { adjust } = useKnockoutMutations(tournamentId);
+  const firstRound = bracket.rounds?.[0];
+  if (!firstRound) return null;
+
+  const teamName = (id) => teams.find((t) => t._id === String(id))?.name || 'TBD';
+
+  const change = (matchupIndex, slot, teamId) => {
+    adjust.mutate(
+      { roundIndex: 0, matchupIndex, [slot === 'A' ? 'slotA' : 'slotB']: teamId },
+      { onError: (e) => toast.error(apiError(e)) }
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Adjust first-round seeding</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {firstRound.matchups.map((m, i) => (
+          <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg border border-border/60 p-2">
+            <Select value={m.slotA?._id || m.slotA || ''} onValueChange={(v) => change(i, 'A', v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder={m.slotALabel || 'TBD'}>{teamName(m.slotA?._id || m.slotA)}</SelectValue></SelectTrigger>
+              <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
+            </Select>
+            <span className="text-xs font-bold text-muted-foreground">vs</span>
+            <Select value={m.slotB?._id || m.slotB || ''} onValueChange={(v) => change(i, 'B', v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder={m.slotBLabel || 'TBD'}>{teamName(m.slotB?._id || m.slotB)}</SelectValue></SelectTrigger>
+              <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">Reassign teams before locking. Once locked, the structure is fixed and results drive advancement.</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function AdminKnockout() {
+  const { tournament, tournamentId } = useOutletContext();
+  const { data: bracket, isLoading, isError, refetch } = useKnockout(tournamentId);
+  const { data: teams = [] } = useTeams(tournamentId);
+  const { lock } = useKnockoutMutations(tournamentId);
+  const confirm = useConfirm();
+
+  const hasBracket = !!bracket?.rounds?.length;
+  const locked = bracket?.locked;
+
+  const onLock = async () => {
+    const ok = await confirm({
+      title: 'Lock the bracket?',
+      description: 'Structural edits will no longer be possible. Results will drive advancement from here.',
+      confirmLabel: 'Lock bracket',
+      variant: 'default',
+    });
+    if (!ok) return;
+    try {
+      await lock.mutateAsync();
+      toast.success('Bracket locked');
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-3xl tracking-wide">Knockout stage</h2>
+        {hasBracket && (
+          <div className="flex items-center gap-2">
+            <Badge variant={locked ? 'success' : 'warning'}>{locked ? 'Locked' : 'Draft'}</Badge>
+            {!locked && <Button onClick={onLock} disabled={lock.isPending}><Lock /> Lock bracket</Button>}
+          </div>
+        )}
+      </div>
+
+      <GenerateCard tournament={tournament} tournamentId={tournamentId} hasBracket={hasBracket} locked={locked} />
+
+      {isError ? (
+        <ErrorState title="Couldn't load the bracket" description="There was a problem reaching the server." onRetry={refetch} />
+      ) : isLoading ? (
+        <div className="flex gap-8 overflow-hidden">
+          {[4, 2, 1].map((count, col) => (
+            <div key={col} className="flex flex-1 flex-col justify-around gap-4">
+              {Array.from({ length: count }).map((_, i) => (
+                <Skeleton key={i} className="h-[68px] w-full" />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {hasBracket && !locked && <AdjustPanel tournamentId={tournamentId} bracket={bracket} teams={teams} />}
+          <Card>
+            <CardContent className="p-5">
+              <Bracket bracket={bracket} />
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}

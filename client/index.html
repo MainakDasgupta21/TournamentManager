@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/trophy.svg" />
+    <link rel="apple-touch-icon" href="/trophy.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="application-name" content="TourneyOps" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="TourneyOps" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Matches the broadcast-dark background so mobile browser chrome blends in -->
+    <meta name="theme-color" content="#0a0e1a" />
+    <meta
+      name="description"
+      content="Universal Tournament Management Platform — cricket & football tournaments, live scores, standings and brackets."
+    />
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TourneyOps" />
+    <meta property="og:title" content="TourneyOps — Tournament Management" />
+    <meta
+      property="og:description"
+      content="Run cricket & football tournaments with live scores, auto standings (NRR / GD) and a fully automated knockout bracket."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TourneyOps — Tournament Management" />
+    <meta
+      name="twitter:description"
+      content="Live scores, standings and brackets for cricket & football tournaments."
+    />
+
+    <!-- Display + body fonts per the broadcast-quality design direction -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>TourneyOps — Tournament Management</title>
+
+    <!-- Apply the saved theme before first paint to avoid a flash. Defaults to
+         dark (the brand look) when no preference is stored. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('tms-theme');
+          var dark = t ? t === 'dark' : true;
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
