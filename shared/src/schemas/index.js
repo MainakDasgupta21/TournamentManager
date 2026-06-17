@@ -5,6 +5,7 @@ export * from './tournament.schema.js';
 export * from './team.schema.js';
 export * from './group.schema.js';
 export * from './result.schema.js';
+export * from './formation.schema.js';
 export * from './fixture.schema.js';
 export * from './knockout.schema.js';
 export * from './tournamentAccess.schema.js';

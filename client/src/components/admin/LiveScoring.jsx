@@ -26,6 +26,10 @@ export default function LiveScoring({ tournament, tournamentId, fixture, onClose
     [teamAId]: fixture.teamA,
     [teamBId]: fixture.teamB,
   };
+  const defaultFormations = {
+    teamA: a.data?.team?.defaultFormation ?? null,
+    teamB: b.data?.team?.defaultFormation ?? null,
+  };
 
   const Console = tournament.sportType === SPORTS.CRICKET ? CricketConsole : FootballConsole;
 
@@ -51,6 +55,7 @@ export default function LiveScoring({ tournament, tournamentId, fixture, onClose
           fixture={fixture}
           rosterByTeam={rosterByTeam}
           teamsById={teamsById}
+          defaultFormations={defaultFormations}
           onClose={onClose}
         />
       )}

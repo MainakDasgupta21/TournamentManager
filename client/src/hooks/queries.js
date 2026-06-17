@@ -239,6 +239,10 @@ export function useTeamMutations(id) {
     qc.invalidateQueries({ queryKey: qk.teams(id) });
     qc.invalidateQueries({ queryKey: qk.groups(id) });
   };
+  const invalidateTeam = (teamId) => {
+    if (!teamId) return;
+    qc.invalidateQueries({ queryKey: qk.team(id, teamId) });
+  };
   return {
     create: useMutation({
       mutationFn: (body) => api.post(`/tournaments/${id}/teams`, body).then((r) => r.data.data.team),
@@ -247,7 +251,20 @@ export function useTeamMutations(id) {
     update: useMutation({
       mutationFn: ({ teamId, body }) =>
         api.patch(`/tournaments/${id}/teams/${teamId}`, body).then((r) => r.data.data.team),
-      onSuccess: invalidate,
+      onSuccess: (_d, v) => {
+        invalidate();
+        invalidateTeam(v.teamId);
+      },
+    }),
+    updateFormation: useMutation({
+      mutationFn: ({ teamId, defaultFormation }) =>
+        api
+          .patch(`/tournaments/${id}/teams/${teamId}/formation`, { defaultFormation })
+          .then((r) => r.data.data.team),
+      onSuccess: (_d, v) => {
+        invalidate();
+        invalidateTeam(v.teamId);
+      },
     }),
     remove: useMutation({
       mutationFn: (teamId) => api.delete(`/tournaments/${id}/teams/${teamId}`),

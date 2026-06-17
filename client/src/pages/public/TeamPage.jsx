@@ -5,11 +5,13 @@ import { useTeam, useStandings } from '@/hooks/queries';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import FixtureItem from '@/components/FixtureItem';
 import MatchDetail from '@/components/MatchDetail';
+import FormationBoard from '@/components/FormationBoard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountUp } from '@/components/ui/count-up';
 import { TeamCrest, Skeleton, EmptyState, ErrorState } from '@/components/ui/misc';
 import { PlayerCategoryBadge } from '@/components/ui/player-category-badge';
 import { teamForm, headToHead } from '@/lib/formGuide';
+import { effectiveFormation, playerMapById } from '@/lib/formation';
 import { accentStyle, cn } from '@/lib/utils';
 
 function TeamSkeleton() {
@@ -124,6 +126,11 @@ export default function TeamPage() {
   }
 
   const { team, players = [] } = data;
+  const playersById = playerMapById(players);
+  const defaultFormation =
+    tournament.sportType === 'football'
+      ? effectiveFormation({ override: null, fallback: team.defaultFormation })
+      : null;
   const row = standing?.row;
 
   return (
@@ -182,44 +189,55 @@ export default function TeamPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shirt className="h-4 w-4" /> Squad ({players.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {players.length ? (
-              <ul className="divide-y divide-border/50">
-                {players.map((p) => (
-                  <li key={p._id} className="flex items-center gap-3 py-2.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-bold tabular-nums">
-                      {p.jerseyNumber ?? '–'}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/t/${tournamentId}/players/${p._id}`}
-                          className="truncate font-medium hover:text-primary hover:underline"
-                        >
-                          {p.name}
-                        </Link>
-                        <PlayerCategoryBadge category={p.category} size="xs" />
+        <div className="space-y-6">
+          {defaultFormation && (
+            <FormationBoard
+              formation={defaultFormation}
+              playersById={playersById}
+              title="Default formation"
+              subtitle="Opponent-facing tactical shape"
+            />
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shirt className="h-4 w-4" /> Squad ({players.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {players.length ? (
+                <ul className="divide-y divide-border/50">
+                  {players.map((p) => (
+                    <li key={p._id} className="flex items-center gap-3 py-2.5">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-bold tabular-nums">
+                        {p.jerseyNumber ?? '–'}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            to={`/t/${tournamentId}/players/${p._id}`}
+                            className="truncate font-medium hover:text-primary hover:underline"
+                          >
+                            {p.name}
+                          </Link>
+                          <PlayerCategoryBadge category={p.category} size="xs" />
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {p.role && <span className="uppercase tracking-wider">{p.role}</span>}
+                          {p.role && ' · '}
+                          {statLine(p)}
+                        </p>
                       </div>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {p.role && <span className="uppercase tracking-wider">{p.role}</span>}
-                        {p.role && ' · '}
-                        {statLine(p)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No roster registered.</p>
-            )}
-          </CardContent>
-        </Card>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No roster registered.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="space-y-6">
           {h2h.length > 0 && (

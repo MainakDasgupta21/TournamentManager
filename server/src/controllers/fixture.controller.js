@@ -4,6 +4,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { Fixture } from '../models/Fixture.js';
 import { Group } from '../models/Group.js';
 import { Tournament } from '../models/Tournament.js';
+import { Player } from '../models/Player.js';
 import { buildGroupFixtureSeeds } from '../services/roundRobin.js';
 import { recalcStandingsForFixture } from '../services/standingsService.js';
 import { recalcPlayerStats } from '../services/playerStatsService.js';
@@ -27,6 +28,42 @@ import {
 
 const ACTION_BY_OP = { add: AUDIT_ACTION.CREATE, edit: AUDIT_ACTION.UPDATE, delete: AUDIT_ACTION.DELETE };
 const clone = (v) => (v == null ? null : JSON.parse(JSON.stringify(v)));
+const id = (v) => (v == null ? null : String(v));
+
+function formationPlayerIds(formation) {
+  if (!formation?.slots?.length) return [];
+  return [
+    ...new Set(
+      formation.slots
+        .map((slot) => id(slot.playerId))
+        .filter(Boolean)
+    ),
+  ];
+}
+
+async function assertFootballFormationPlayers({ tournamentId, fixture, formationBySide }) {
+  if (!formationBySide) return;
+  const sideSpecs = [
+    { key: 'teamA', teamId: fixture.teamA },
+    { key: 'teamB', teamId: fixture.teamB },
+  ];
+  for (const side of sideSpecs) {
+    const formation = formationBySide[side.key];
+    if (!formation) continue;
+    const ids = formationPlayerIds(formation);
+    if (!ids.length) continue;
+    const count = await Player.countDocuments({
+      _id: { $in: ids },
+      tournamentId,
+      teamId: side.teamId,
+    });
+    if (count !== ids.length) {
+      throw ApiError.badRequest(
+        `Formation override for ${side.key} contains a player outside that team roster`
+      );
+    }
+  }
+}
 
 /**
  * Generate round-robin group-stage fixtures for every group. Existing group
@@ -265,6 +302,13 @@ export const submitResult = asyncHandler(async (req, res) => {
   }
 
   const { sportResult, winner } = resolveResult(req.tournament, fixture, req.body);
+  if (req.tournament.sportType === SPORTS.FOOTBALL) {
+    await assertFootballFormationPlayers({
+      tournamentId: req.tournament._id,
+      fixture,
+      formationBySide: sportResult.formation,
+    });
+  }
 
   const beforeResult = clone(fixture.result);
   const wasCompleted = fixture.status === FIXTURE_STATUS.COMPLETED;
@@ -360,6 +404,13 @@ export const liveUpdate = asyncHandler(async (req, res) => {
   const sport = req.tournament.sportType;
   const snapshot = sport === SPORTS.CRICKET ? req.body.cricket : req.body.football;
   if (!snapshot) throw ApiError.badRequest(`Expected a "${sport}" live payload`);
+  if (sport === SPORTS.FOOTBALL) {
+    await assertFootballFormationPlayers({
+      tournamentId: req.tournament._id,
+      fixture,
+      formationBySide: snapshot.formation,
+    });
+  }
 
   // Auto-flip to live on first update.
   if (fixture.status !== FIXTURE_STATUS.LIVE) fixture.status = FIXTURE_STATUS.LIVE;

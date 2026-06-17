@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Plus, Trash2, Users, Shirt, X, Pencil, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { TeamCrest, EmptyState, ErrorState, SkeletonGrid } from '@/components/ui/misc';
 import { PlayerCategoryBadge } from '@/components/ui/player-category-badge';
 import ImageUpload from '@/components/admin/ImageUpload';
+import FormationEditor from '@/components/admin/FormationEditor';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
 import {
@@ -20,6 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // Radix Select needs a non-empty value, so "Unrated" uses a sentinel that maps
 // back to `null` on the way to the API.
@@ -202,12 +205,25 @@ function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
 
 function RosterDialog({ tournamentId, team, sport }) {
   const { data } = useTeam(tournamentId, team._id);
-  const { addPlayer, updatePlayer, removePlayer } = useTeamMutations(tournamentId);
+  const { addPlayer, updatePlayer, removePlayer, updateFormation } = useTeamMutations(tournamentId);
   const roleOptions = sport === SPORTS.CRICKET ? CRICKET_ROLES : FOOTBALL_POSITIONS;
   const blankForm = { name: '', role: roleOptions[0], jerseyNumber: '', category: UNRATED };
   const [form, setForm] = useState(blankForm);
+  const [formationDraft, setFormationDraft] = useState(null);
 
   const players = data?.players ?? [];
+  const isFootball = sport === SPORTS.FOOTBALL;
+  const savedFormation = data?.team?.defaultFormation ?? null;
+
+  useEffect(() => {
+    if (!isFootball) return;
+    setFormationDraft(savedFormation);
+  }, [isFootball, data?.team?._id, data?.team?.updatedAt]);
+
+  const formationDirty = useMemo(
+    () => JSON.stringify(formationDraft) !== JSON.stringify(savedFormation),
+    [formationDraft, savedFormation]
+  );
 
   const onUpdatePlayer = async (playerId, body) => {
     try {
@@ -246,47 +262,148 @@ function RosterDialog({ tournamentId, team, sport }) {
     );
   };
 
+  const saveFormation = async () => {
+    try {
+      await updateFormation.mutateAsync({
+        teamId: team._id,
+        defaultFormation: formationDraft,
+      });
+      toast.success('Default formation saved');
+    } catch (err) {
+      toast.error(apiError(err));
+    }
+  };
+
   return (
-    <DialogContent>
+    <DialogContent className="max-w-4xl">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2"><Shirt className="h-4 w-4" /> {team.name} — Roster</DialogTitle>
       </DialogHeader>
-      <form onSubmit={submit} className="space-y-2">
-        <div className="space-y-1">
-          <Label className="text-xs">Player</Label>
-          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        </div>
-        <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_1fr_64px_auto]">
-          <div className="space-y-1">
-            <Label className="text-xs">{sport === SPORTS.CRICKET ? 'Role' : 'Position'}</Label>
-            <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Category</Label>
-            <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">#</Label>
-            <Input type="number" value={form.jerseyNumber} onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })} />
-          </div>
-          <Button type="submit" size="icon" disabled={addPlayer.isPending} className="w-full sm:w-10"><Plus /></Button>
-        </div>
-      </form>
-      <ul className="max-h-72 divide-y divide-border/50 overflow-y-auto scrollbar-thin">
-        {players.length ? players.map((p) => (
-          <PlayerRow
-            key={p._id}
-            player={p}
-            sport={sport}
-            roleOptions={roleOptions}
-            onUpdate={onUpdatePlayer}
-            onRemove={onRemovePlayer}
-          />
-        )) : <p className="py-4 text-center text-sm text-muted-foreground">No players yet.</p>}
-      </ul>
+      {isFootball ? (
+        <Tabs defaultValue="roster" className="space-y-3">
+          <TabsList>
+            <TabsTrigger value="roster">Roster</TabsTrigger>
+            <TabsTrigger value="formation">Formation</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="roster" className="space-y-3">
+            <form onSubmit={submit} className="space-y-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Player</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_1fr_64px_auto]">
+                <div className="space-y-1">
+                  <Label className="text-xs">Position</Label>
+                  <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Category</Label>
+                  <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">#</Label>
+                  <Input type="number" value={form.jerseyNumber} onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })} />
+                </div>
+                <Button type="submit" size="icon" disabled={addPlayer.isPending} className="w-full sm:w-10"><Plus /></Button>
+              </div>
+            </form>
+            <ul className="max-h-72 divide-y divide-border/50 overflow-y-auto scrollbar-thin">
+              {players.length ? players.map((p) => (
+                <PlayerRow
+                  key={p._id}
+                  player={p}
+                  sport={sport}
+                  roleOptions={roleOptions}
+                  onUpdate={onUpdatePlayer}
+                  onRemove={onRemovePlayer}
+                />
+              )) : <p className="py-4 text-center text-sm text-muted-foreground">No players yet.</p>}
+            </ul>
+          </TabsContent>
+
+          <TabsContent value="formation" className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Football only</Badge>
+                <p className="text-xs text-muted-foreground">
+                  This is the team default; match overrides can be set while entering match results.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFormationDraft(null)}
+                  disabled={!formationDraft || updateFormation.isPending}
+                >
+                  Clear default
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveFormation}
+                  disabled={!formationDirty || updateFormation.isPending}
+                >
+                  {updateFormation.isPending ? 'Saving...' : 'Save formation'}
+                </Button>
+              </div>
+            </div>
+
+            <FormationEditor
+              roster={players}
+              value={formationDraft}
+              onChange={setFormationDraft}
+              disabled={updateFormation.isPending}
+              title="Default team formation"
+              description="Use drag-and-drop or click-to-assign for smooth tactical setup."
+            />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <>
+          <form onSubmit={submit} className="space-y-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Player</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_1fr_64px_auto]">
+              <div className="space-y-1">
+                <Label className="text-xs">Role</Label>
+                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Category</Label>
+                <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">#</Label>
+                <Input type="number" value={form.jerseyNumber} onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })} />
+              </div>
+              <Button type="submit" size="icon" disabled={addPlayer.isPending} className="w-full sm:w-10"><Plus /></Button>
+            </div>
+          </form>
+          <ul className="max-h-72 divide-y divide-border/50 overflow-y-auto scrollbar-thin">
+            {players.length ? players.map((p) => (
+              <PlayerRow
+                key={p._id}
+                player={p}
+                sport={sport}
+                roleOptions={roleOptions}
+                onUpdate={onUpdatePlayer}
+                onRemove={onRemovePlayer}
+              />
+            )) : <p className="py-4 text-center text-sm text-muted-foreground">No players yet.</p>}
+          </ul>
+        </>
+      )}
     </DialogContent>
   );
 }

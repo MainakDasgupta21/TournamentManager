@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { SPORTS } from '@tms/shared/constants';
 import { useSubmitResult } from '@/hooks/useSubmitResult';
 import { useTeam } from '@/hooks/queries';
-import LineupPicker, { cleanLineups, lineupsFromResult } from './LineupPicker';
+import LineupPicker, {
+  cleanLineups,
+  lineupsFromResult,
+  cleanFormationOverrides,
+  formationOverridesFromResult,
+} from './LineupPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -235,7 +240,17 @@ function footballInitial(fixture) {
 }
 
 /* ------------------------------ Football ------------------------------ */
-function FootballForm({ fixture, onSubmit, submitting, rosterByTeam, lineups, setLineups }) {
+function FootballForm({
+  fixture,
+  onSubmit,
+  submitting,
+  rosterByTeam,
+  lineups,
+  setLineups,
+  defaultFormations,
+  formationOverrides,
+  setFormationOverrides,
+}) {
   const teamA = fixture.teamA;
   const teamB = fixture.teamB;
   const isKnockout = fixture.stage === 'knockout';
@@ -270,6 +285,8 @@ function FootballForm({ fixture, onSubmit, submitting, rosterByTeam, lineups, se
       // Winner is derived server-side from the (decisive) penalty score.
       football.penalties = { teamA: pA, teamB: pB };
     }
+    const formation = cleanFormationOverrides(formationOverrides);
+    if (formation) football.formation = formation;
     const ln = cleanLineups(lineups);
     if (ln) football.lineups = ln;
     onSubmit({ football });
@@ -300,6 +317,10 @@ function FootballForm({ fixture, onSubmit, submitting, rosterByTeam, lineups, se
         rosterByTeam={rosterByTeam}
         value={lineups}
         onChange={setLineups}
+        showFormationOverrides
+        defaultFormations={defaultFormations}
+        formationOverrides={formationOverrides}
+        onFormationOverridesChange={setFormationOverrides}
       />
 
       <DialogFooter>
@@ -323,10 +344,24 @@ export default function ResultEntryDialog({ tournament, tournamentId, fixture, o
     [teamBId]: b.data?.players ?? [],
   };
   const [lineups, setLineups] = useState(() => lineupsFromResult(fixture.result));
+  const [formationOverrides, setFormationOverrides] = useState(() =>
+    formationOverridesFromResult(fixture.result)
+  );
+  const defaultFormations = {
+    teamA: a.data?.team?.defaultFormation ?? null,
+    teamB: b.data?.team?.defaultFormation ?? null,
+  };
 
   const handle = (body) => submit({ fixtureId: fixture._id, body, onDone: onClose });
 
-  const formProps = { rosterByTeam, lineups, setLineups };
+  const formProps = {
+    rosterByTeam,
+    lineups,
+    setLineups,
+    defaultFormations,
+    formationOverrides,
+    setFormationOverrides,
+  };
 
   return (
     <DialogContent className="max-w-2xl">

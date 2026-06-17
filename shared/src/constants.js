@@ -76,6 +76,54 @@ export const CRICKET_ROLES = Object.freeze([
 export const FOOTBALL_POSITIONS = Object.freeze(['GK', 'DEF', 'MID', 'FWD']);
 
 /**
+ * Supported football formation presets. Coordinates are percentage-based pitch
+ * anchors used by admin/public formation boards.
+ */
+export const FOOTBALL_FORMATION_PRESETS = Object.freeze({
+  '4-3-3': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LB', label: 'LB', line: 'def', x: 18, y: 74 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 38, y: 76 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 62, y: 76 },
+    { slot: 'RB', label: 'RB', line: 'def', x: 82, y: 74 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 30, y: 54 },
+    { slot: 'CDM', label: 'CDM', line: 'mid', x: 50, y: 58 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 70, y: 54 },
+    { slot: 'LW', label: 'LW', line: 'fwd', x: 22, y: 28 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 18 },
+    { slot: 'RW', label: 'RW', line: 'fwd', x: 78, y: 28 },
+  ]),
+  '4-2-3-1': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LB', label: 'LB', line: 'def', x: 18, y: 74 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 38, y: 76 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 62, y: 76 },
+    { slot: 'RB', label: 'RB', line: 'def', x: 82, y: 74 },
+    { slot: 'LDM', label: 'LDM', line: 'mid', x: 38, y: 58 },
+    { slot: 'RDM', label: 'RDM', line: 'mid', x: 62, y: 58 },
+    { slot: 'LAM', label: 'LAM', line: 'mid', x: 24, y: 40 },
+    { slot: 'CAM', label: 'CAM', line: 'mid', x: 50, y: 34 },
+    { slot: 'RAM', label: 'RAM', line: 'mid', x: 76, y: 40 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 18 },
+  ]),
+  '4-4-2': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LB', label: 'LB', line: 'def', x: 18, y: 74 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 38, y: 76 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 62, y: 76 },
+    { slot: 'RB', label: 'RB', line: 'def', x: 82, y: 74 },
+    { slot: 'LM', label: 'LM', line: 'mid', x: 16, y: 50 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 38, y: 54 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 62, y: 54 },
+    { slot: 'RM', label: 'RM', line: 'mid', x: 84, y: 50 },
+    { slot: 'ST1', label: 'ST', line: 'fwd', x: 40, y: 24 },
+    { slot: 'ST2', label: 'ST', line: 'fwd', x: 60, y: 24 },
+  ]),
+});
+export const FOOTBALL_FORMATION_PRESET_VALUES = Object.keys(FOOTBALL_FORMATION_PRESETS);
+export const FOOTBALL_FORMATION_SLOT_COUNT = 11;
+
+/**
  * Manually-assigned player tier/category (a draft/auction-style grading), from
  * strongest to weakest. Sport-agnostic and optional — a player with no category
  * is treated as "Unrated".

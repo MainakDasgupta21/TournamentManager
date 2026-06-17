@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import FormationEditor from './FormationEditor';
+import {
+  formationFromResult as readFormationOverridesFromResult,
+  cleanFormationOverrides as normalizeFormationOverrides,
+} from '@/lib/formation';
 
 /**
  * Strip a lineup selection down to what's worth persisting: `{ teamA, teamB }`
@@ -20,6 +25,14 @@ export function lineupsFromResult(result) {
     teamA: (result?.lineups?.teamA ?? []).map(String),
     teamB: (result?.lineups?.teamB ?? []).map(String),
   };
+}
+
+export function formationOverridesFromResult(result) {
+  return readFormationOverridesFromResult(result);
+}
+
+export function cleanFormationOverrides(value) {
+  return normalizeFormationOverrides(value);
 }
 
 function SideColumn({ team, players, selected, onToggle }) {
@@ -64,11 +77,24 @@ function SideColumn({ team, players, selected, onToggle }) {
 /**
  * Optional Playing XI selector, collapsed by default so it never slows a quick
  * result. `value` is `{ teamA: string[], teamB: string[] }`; `onChange` receives
- * the next value. Naming the XI makes appearances and clean sheets exact.
+ * the next value. For football, optional per-side formation overrides can also
+ * be edited here without replacing team defaults.
  */
-export default function LineupPicker({ teamA, teamB, rosterByTeam, value, onChange, defaultOpen = false }) {
+export default function LineupPicker({
+  teamA,
+  teamB,
+  rosterByTeam,
+  value,
+  onChange,
+  defaultOpen = false,
+  showFormationOverrides = false,
+  formationOverrides = { teamA: null, teamB: null },
+  onFormationOverridesChange,
+  defaultFormations = { teamA: null, teamB: null },
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const count = (value?.teamA?.length || 0) + (value?.teamB?.length || 0);
+  const canEditOverrides = typeof onFormationOverridesChange === 'function';
 
   const toggle = (slot, pid) => {
     const cur = new Set(value?.[slot] ?? []);
@@ -76,6 +102,23 @@ export default function LineupPicker({ teamA, teamB, rosterByTeam, value, onChan
     else cur.add(pid);
     onChange({ ...value, [slot]: [...cur] });
   };
+
+  const setFormationOverride = (side, formation) => {
+    if (!canEditOverrides) return;
+    onFormationOverridesChange({
+      ...(formationOverrides ?? {}),
+      [side]: formation,
+    });
+  };
+
+  const clearFormationOverride = (side) => {
+    if (!canEditOverrides) return;
+    const next = { ...(formationOverrides ?? {}) };
+    delete next[side];
+    onFormationOverridesChange(next);
+  };
+
+  const hasOverrides = Boolean(formationOverrides?.teamA || formationOverrides?.teamB);
 
   return (
     <div className="rounded-lg border border-border">
@@ -90,19 +133,100 @@ export default function LineupPicker({ teamA, teamB, rosterByTeam, value, onChan
         {count > 0 && <span className="ml-auto text-xs text-muted-foreground">{count} selected</span>}
       </button>
       {open && (
-        <div className="grid gap-3 border-t border-border/60 p-3 sm:grid-cols-2">
-          <SideColumn
-            team={teamA}
-            players={rosterByTeam?.[teamA?._id] ?? []}
-            selected={value?.teamA ?? []}
-            onToggle={(pid) => toggle('teamA', pid)}
-          />
-          <SideColumn
-            team={teamB}
-            players={rosterByTeam?.[teamB?._id] ?? []}
-            selected={value?.teamB ?? []}
-            onToggle={(pid) => toggle('teamB', pid)}
-          />
+        <div className="space-y-3 border-t border-border/60 p-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SideColumn
+              team={teamA}
+              players={rosterByTeam?.[teamA?._id] ?? []}
+              selected={value?.teamA ?? []}
+              onToggle={(pid) => toggle('teamA', pid)}
+            />
+            <SideColumn
+              team={teamB}
+              players={rosterByTeam?.[teamB?._id] ?? []}
+              selected={value?.teamB ?? []}
+              onToggle={(pid) => toggle('teamB', pid)}
+            />
+          </div>
+
+          {showFormationOverrides && (
+            <div className="space-y-3 rounded-lg border border-border/70 bg-secondary/20 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Formation override (football)
+                </p>
+                {hasOverrides ? (
+                  <span className="text-xs text-muted-foreground">Custom override active</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Using team defaults</span>
+                )}
+              </div>
+
+              <div className="grid gap-3 xl:grid-cols-2">
+                <div className="space-y-2 rounded-xl border border-border/70 bg-card/70 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {teamA?.name ?? 'Team A'}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                      onClick={() => clearFormationOverride('teamA')}
+                      disabled={!formationOverrides?.teamA || !canEditOverrides}
+                    >
+                      Use default
+                    </button>
+                  </div>
+                  <FormationEditor
+                    compact
+                    roster={rosterByTeam?.[teamA?._id] ?? []}
+                    value={formationOverrides?.teamA ?? defaultFormations?.teamA ?? null}
+                    onChange={(next) => setFormationOverride('teamA', next)}
+                    disabled={!canEditOverrides}
+                    title="Team A shape"
+                    description={
+                      formationOverrides?.teamA
+                        ? 'Override active for this match.'
+                        : defaultFormations?.teamA
+                          ? 'Editing now will create a match-only override.'
+                          : 'No default found. Create a match-only shape.'
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2 rounded-xl border border-border/70 bg-card/70 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {teamB?.name ?? 'Team B'}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                      onClick={() => clearFormationOverride('teamB')}
+                      disabled={!formationOverrides?.teamB || !canEditOverrides}
+                    >
+                      Use default
+                    </button>
+                  </div>
+                  <FormationEditor
+                    compact
+                    roster={rosterByTeam?.[teamB?._id] ?? []}
+                    value={formationOverrides?.teamB ?? defaultFormations?.teamB ?? null}
+                    onChange={(next) => setFormationOverride('teamB', next)}
+                    disabled={!canEditOverrides}
+                    title="Team B shape"
+                    description={
+                      formationOverrides?.teamB
+                        ? 'Override active for this match.'
+                        : defaultFormations?.teamB
+                          ? 'Editing now will create a match-only override.'
+                          : 'No default found. Create a match-only shape.'
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

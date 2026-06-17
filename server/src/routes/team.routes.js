@@ -11,6 +11,7 @@ import {
   listTeams,
   getTeam,
   updateTeam,
+  updateTeamFormation,
   deleteTeam,
   addPlayer,
   updatePlayer,
@@ -27,6 +28,7 @@ router.get('/:teamId', loadTournament, getTeam);
 
 router.post('/', ...manage, validate(schemas.createTeamSchema), createTeam);
 router.patch('/:teamId', ...manage, validate(schemas.updateTeamSchema), updateTeam);
+router.patch('/:teamId/formation', ...manage, validate(schemas.updateTeamFormationSchema), updateTeamFormation);
 router.delete('/:teamId', ...manage, deleteTeam);
 
 /* Roster */

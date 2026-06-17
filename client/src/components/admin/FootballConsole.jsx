@@ -3,7 +3,12 @@ import { toast } from 'sonner';
 import { Radio, Save, Goal, Square, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { useFixtureMutations } from '@/hooks/queries';
 import { useSubmitResult } from '@/hooks/useSubmitResult';
-import LineupPicker, { cleanLineups, lineupsFromResult } from './LineupPicker';
+import LineupPicker, {
+  cleanLineups,
+  lineupsFromResult,
+  cleanFormationOverrides,
+  formationOverridesFromResult,
+} from './LineupPicker';
 import { apiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -35,7 +40,15 @@ function PlayerSelect({ value, onChange, players, placeholder }) {
   );
 }
 
-export default function FootballConsole({ tournament, tournamentId, fixture, rosterByTeam, teamsById, onClose }) {
+export default function FootballConsole({
+  tournament,
+  tournamentId,
+  fixture,
+  rosterByTeam,
+  teamsById,
+  defaultFormations,
+  onClose,
+}) {
   const { liveUpdate } = useFixtureMutations(tournamentId);
   const { submit, isPending: submitting } = useSubmitResult(tournamentId);
   const teamAId = fixture.teamA._id;
@@ -61,6 +74,9 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
   const [pens, setPens] = useState({ teamA: 0, teamB: 0 });
   const [motm, setMotm] = useState('');
   const [lineups, setLineups] = useState(() => lineupsFromResult(fixture.result));
+  const [formationOverrides, setFormationOverrides] = useState(() =>
+    fixture.liveState?.formation ?? formationOverridesFromResult(fixture.result)
+  );
 
   const teamName = (id) => teamsById[id]?.name || teamsById[id]?.shortCode || 'Team';
   const pName = (id) => playersById[id]?.name || '';
@@ -74,9 +90,26 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
     return { a, b };
   }, [goals, teamAId, teamBId]);
 
-  const pushLive = (nextGoals = goals, nextCards = cards, nextSubs = subs) => {
+  const pushLive = (
+    nextGoals = goals,
+    nextCards = cards,
+    nextSubs = subs,
+    nextFormation = formationOverrides
+  ) => {
+    const formation = cleanFormationOverrides(nextFormation);
     liveUpdate.mutate(
-      { fixtureId: fixture._id, body: { football: { goals: nextGoals, cards: nextCards, substitutions: nextSubs, minute: minute ? Number(minute) : undefined } } },
+      {
+        fixtureId: fixture._id,
+        body: {
+          football: {
+            goals: nextGoals,
+            cards: nextCards,
+            substitutions: nextSubs,
+            ...(formation ? { formation } : {}),
+            minute: minute ? Number(minute) : undefined,
+          },
+        },
+      },
       { onError: (e) => toast.error(apiError(e)) }
     );
   };
@@ -125,6 +158,8 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
     const football = { goals, cards, substitutions: subs, result: { winner } };
     if (isKnockout && score.a === score.b) football.penalties = { teamA: Number(pens.teamA), teamB: Number(pens.teamB) };
     if (motm) football.manOfTheMatch = motm;
+    const formation = cleanFormationOverrides(formationOverrides);
+    if (formation) football.formation = formation;
     const ln = cleanLineups(lineups);
     if (ln) football.lineups = ln;
     submit({ fixtureId: fixture._id, body: { football }, onDone: onClose });
@@ -266,6 +301,13 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
         rosterByTeam={rosterByTeam}
         value={lineups}
         onChange={setLineups}
+        showFormationOverrides
+        defaultFormations={defaultFormations}
+        formationOverrides={formationOverrides}
+        onFormationOverridesChange={(next) => {
+          setFormationOverrides(next);
+          pushLive(goals, cards, subs, next);
+        }}
       />
 
       <div className="space-y-1">

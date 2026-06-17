@@ -6,6 +6,7 @@ import {
   FOOTBALL_GOAL_TYPES,
 } from '../constants.js';
 import { objectId } from './common.js';
+import { footballFormationBySideSchema } from './formation.schema.js';
 
 /**
  * Optional explicit bonus points per team. Used when `pointsConfig.bonusPointRule`
@@ -194,6 +195,8 @@ export const footballResultSchema = z.object({
   manOfTheMatch: playerRef,
   bonus: z.array(bonusEntrySchema).optional(),
   lineups: lineupsSchema,
+  // Optional per-match tactical layout override (team defaults remain unchanged).
+  formation: footballFormationBySideSchema.optional(),
 });
 
 /**
@@ -262,6 +265,7 @@ export const liveUpdateSchema = z.object({
         goals: z.array(footballGoalSchema).optional(),
         cards: z.array(footballCardSchema).optional(),
         substitutions: z.array(footballSubSchema).optional(),
+        formation: footballFormationBySideSchema.optional(),
         teamAGoals: z.number().int().min(0).optional(),
         teamBGoals: z.number().int().min(0).optional(),
         minute: z.number().int().min(0).max(130).optional(),

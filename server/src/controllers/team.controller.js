@@ -9,11 +9,56 @@ import {
   SPORTS,
   CRICKET_ROLES,
   FOOTBALL_POSITIONS,
+  FOOTBALL_FORMATION_PRESETS,
 } from '@tms/shared/constants';
 
 /** Roles valid for the tournament's sport. */
 function allowedRoles(sport) {
   return sport === SPORTS.CRICKET ? CRICKET_ROLES : FOOTBALL_POSITIONS;
+}
+
+const id = (v) => (v == null ? null : String(v));
+
+function assignedFormationPlayerIds(formation) {
+  if (!formation?.slots?.length) return [];
+  return [
+    ...new Set(
+      formation.slots
+        .map((slot) => id(slot.playerId))
+        .filter(Boolean)
+    ),
+  ];
+}
+
+function stripFormationPlayer(formation, playerId) {
+  if (!formation?.slots?.length) return formation ?? null;
+  const pid = id(playerId);
+  return {
+    preset: formation.preset,
+    slots: formation.slots.map((slot) => ({
+      slot: slot.slot,
+      playerId: id(slot.playerId) === pid ? null : slot.playerId ?? null,
+    })),
+  };
+}
+
+async function assertFormationPlayersBelongToTeam({ formation, team, tournamentId }) {
+  const ids = assignedFormationPlayerIds(formation);
+  if (!ids.length) return;
+  const count = await Player.countDocuments({
+    _id: { $in: ids },
+    teamId: team._id,
+    tournamentId,
+  });
+  if (count !== ids.length) {
+    throw ApiError.badRequest('Formation contains a player not in this team roster');
+  }
+}
+
+function ensurePresetConfigured(preset) {
+  if (!FOOTBALL_FORMATION_PRESETS[preset]) {
+    throw ApiError.badRequest(`Unsupported formation preset: ${preset}`);
+  }
 }
 
 async function syncGroupMembership(tournamentId, teamId, newGroupId, oldGroupId) {
@@ -94,6 +139,37 @@ export const updateTeam = asyncHandler(async (req, res) => {
   return sendSuccess(res, { message: 'Team updated', data: { team } });
 });
 
+/** Set (or clear) a team's football default formation. */
+export const updateTeamFormation = asyncHandler(async (req, res) => {
+  const team = await Team.findOne({
+    _id: req.params.teamId,
+    tournamentId: req.tournament._id,
+  });
+  if (!team) throw ApiError.notFound('Team not found');
+
+  if (req.tournament.sportType !== SPORTS.FOOTBALL) {
+    throw ApiError.badRequest('Default formation is only supported for football tournaments');
+  }
+
+  const { defaultFormation } = req.body;
+  if (defaultFormation == null) {
+    team.defaultFormation = null;
+    await team.save();
+    return sendSuccess(res, { message: 'Team formation cleared', data: { team } });
+  }
+
+  ensurePresetConfigured(defaultFormation.preset);
+  await assertFormationPlayersBelongToTeam({
+    formation: defaultFormation,
+    team,
+    tournamentId: req.tournament._id,
+  });
+
+  team.defaultFormation = defaultFormation;
+  await team.save();
+  return sendSuccess(res, { message: 'Team formation updated', data: { team } });
+});
+
 export const deleteTeam = asyncHandler(async (req, res) => {
   const team = await Team.findOne({
     _id: req.params.teamId,
@@ -153,5 +229,16 @@ export const deletePlayer = asyncHandler(async (req, res) => {
     tournamentId: req.tournament._id,
   });
   if (!player) throw ApiError.notFound('Player not found');
+
+  const team = await Team.findOne({ _id: player.teamId, tournamentId: req.tournament._id });
+  if (team?.defaultFormation?.slots?.length) {
+    const next = stripFormationPlayer(team.defaultFormation, player._id);
+    const changed = JSON.stringify(next) !== JSON.stringify(team.defaultFormation.toObject());
+    if (changed) {
+      team.defaultFormation = next;
+      await team.save();
+    }
+  }
+
   return sendSuccess(res, { message: 'Player removed' });
 });

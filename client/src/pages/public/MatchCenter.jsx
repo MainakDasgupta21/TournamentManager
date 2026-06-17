@@ -19,6 +19,8 @@ import ManhattanChart from '@/components/charts/ManhattanChart';
 import MatchTimeline from '@/components/charts/MatchTimeline';
 import WinProbabilityBar from '@/components/charts/WinProbabilityBar';
 import MatchShareBar from '@/components/MatchShareBar';
+import FormationBoard from '@/components/FormationBoard';
+import { effectiveFormation } from '@/lib/formation';
 import { cn } from '@/lib/utils';
 
 const teamEq = (a, b) => String(a) === String(b);
@@ -117,6 +119,21 @@ export default function MatchCenter() {
     if (!fixture) return [];
     return buildCommentary(sport, { result: fixture.result, live }, { playersById, teamsById });
   }, [fixture, live, sport, playersById, teamsById]);
+
+  const effectiveFormationA =
+    sport === 'football'
+      ? effectiveFormation({
+          override: live?.formation?.teamA ?? fixture?.result?.formation?.teamA ?? null,
+          fallback: aTeam.data?.team?.defaultFormation ?? null,
+        })
+      : null;
+  const effectiveFormationB =
+    sport === 'football'
+      ? effectiveFormation({
+          override: live?.formation?.teamB ?? fixture?.result?.formation?.teamB ?? null,
+          fallback: bTeam.data?.team?.defaultFormation ?? null,
+        })
+      : null;
 
   if (isLoading) {
     return (
@@ -298,6 +315,42 @@ export default function MatchCenter() {
           )}
         </CardContent>
       </Card>
+
+      {sport === 'football' && (effectiveFormationA || effectiveFormationB) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" /> Formation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-2">
+            <FormationBoard
+              compact
+              formation={effectiveFormationA}
+              playersById={playersById}
+              title={fixture.teamA?.name || 'Team A'}
+              subtitle={
+                (live?.formation?.teamA ?? fixture?.result?.formation?.teamA)
+                  ? 'Match override'
+                  : 'Team default'
+              }
+              emptyMessage="No formation published for this side."
+            />
+            <FormationBoard
+              compact
+              formation={effectiveFormationB}
+              playersById={playersById}
+              title={fixture.teamB?.name || 'Team B'}
+              subtitle={
+                (live?.formation?.teamB ?? fixture?.result?.formation?.teamB)
+                  ? 'Match override'
+                  : 'Team default'
+              }
+              emptyMessage="No formation published for this side."
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Analytics */}

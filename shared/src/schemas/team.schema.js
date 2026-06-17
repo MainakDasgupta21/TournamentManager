@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CRICKET_ROLES, FOOTBALL_POSITIONS, PLAYER_CATEGORIES } from '../constants.js';
 import { hexColor, nonEmptyString, objectId } from './common.js';
+import { footballFormationSchema } from './formation.schema.js';
 
 export const createTeamSchema = z.object({
   body: z.object({
@@ -18,6 +19,13 @@ export const createTeamSchema = z.object({
 
 export const updateTeamSchema = z.object({
   body: createTeamSchema.shape.body.partial(),
+});
+
+/** Set (or clear) the football default formation for a team. */
+export const updateTeamFormationSchema = z.object({
+  body: z.object({
+    defaultFormation: footballFormationSchema.nullable(),
+  }),
 });
 
 /**

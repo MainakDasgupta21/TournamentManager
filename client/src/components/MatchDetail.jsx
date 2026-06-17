@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Radio, MapPin, CalendarDays, Trophy, ArrowRight, BarChart3 } from 'lucide-react';
+import { useTeam } from '@/hooks/queries';
 import {
   Sheet,
   SheetContent,
@@ -11,7 +12,9 @@ import {
 import { FixtureStatusBadge } from '@/components/ui/status-badge';
 import { TeamCrest } from '@/components/ui/misc';
 import { Button } from '@/components/ui/button';
+import FormationBoard from '@/components/FormationBoard';
 import { formatDateTime, oversDisplay, footballScore, cricketTeamScore } from '@/lib/format';
+import { effectiveFormation, playerMapById } from '@/lib/formation';
 import { cn } from '@/lib/utils';
 
 const teamMatch = (a, b) => String(a) === String(b);
@@ -92,7 +95,7 @@ function GoalTimeline({ fixture }) {
   );
 }
 
-function MatchBody({ fixture, sport, live, tournamentId, onNavigate }) {
+function MatchBody({ fixture, sport, live, tournamentId, onNavigate, formationBySide, formationPlayers }) {
   const isLive = fixture.status === 'live';
   const completed = fixture.status === 'completed';
   const winnerId = fixture.winner?._id || fixture.winner || fixture.result?.result?.winner;
@@ -177,6 +180,38 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate }) {
 
       {sport === 'football' && completed && <GoalTimeline fixture={fixture} />}
 
+      {sport === 'football' && (formationBySide?.teamA || formationBySide?.teamB) && (
+        <div className="space-y-2 border-t border-border/60 pt-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Formation</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <FormationBoard
+              compact
+              formation={formationBySide?.teamA}
+              playersById={formationPlayers}
+              title={fixture.teamA?.shortCode || fixture.teamA?.name || 'Team A'}
+              subtitle={
+                (live?.formation?.teamA ?? fixture?.result?.formation?.teamA)
+                  ? 'Match override'
+                  : 'Team default'
+              }
+              emptyMessage="Not set"
+            />
+            <FormationBoard
+              compact
+              formation={formationBySide?.teamB}
+              playersById={formationPlayers}
+              title={fixture.teamB?.shortCode || fixture.teamB?.name || 'Team B'}
+              subtitle={
+                (live?.formation?.teamB ?? fixture?.result?.formation?.teamB)
+                  ? 'Match override'
+                  : 'Team default'
+              }
+              emptyMessage="Not set"
+            />
+          </div>
+        </div>
+      )}
+
       {fixture.venue && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" /> {fixture.venue}
@@ -217,6 +252,27 @@ export default function MatchDetail({ fixture, sport, live, tournamentId, onOpen
   }, [fixture]);
 
   const f = fixture || retained;
+  const teamAId = f?.teamA?._id;
+  const teamBId = f?.teamB?._id;
+  const a = useTeam(tournamentId, sport === 'football' ? teamAId : null);
+  const b = useTeam(tournamentId, sport === 'football' ? teamBId : null);
+  const formationPlayers = useMemo(
+    () => playerMapById([...(a.data?.players ?? []), ...(b.data?.players ?? [])]),
+    [a.data?.players, b.data?.players]
+  );
+  const formationBySide =
+    sport === 'football' && f
+      ? {
+          teamA: effectiveFormation({
+            override: live?.formation?.teamA ?? f.result?.formation?.teamA ?? null,
+            fallback: a.data?.team?.defaultFormation ?? null,
+          }),
+          teamB: effectiveFormation({
+            override: live?.formation?.teamB ?? f.result?.formation?.teamB ?? null,
+            fallback: b.data?.team?.defaultFormation ?? null,
+          }),
+        }
+      : { teamA: null, teamB: null };
 
   return (
     <Sheet open={!!fixture} onOpenChange={(o) => !o && onOpenChange(false)}>
@@ -236,6 +292,8 @@ export default function MatchDetail({ fixture, sport, live, tournamentId, onOpen
             live={live}
             tournamentId={tournamentId}
             onNavigate={() => onOpenChange(false)}
+            formationBySide={formationBySide}
+            formationPlayers={formationPlayers}
           />
         )}
       </SheetContent>
