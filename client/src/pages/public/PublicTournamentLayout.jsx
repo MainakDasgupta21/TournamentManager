@@ -22,8 +22,10 @@ function Tab({ to, label, end }) {
       end={end}
       className={({ isActive }) =>
         cn(
-          'relative shrink-0 whitespace-nowrap px-1 py-3 text-sm font-medium transition-colors',
-          isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+          'relative shrink-0 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          isActive
+            ? 'bg-primary/12 text-foreground'
+            : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
         )
       }
     >
@@ -33,7 +35,7 @@ function Tab({ to, label, end }) {
           {isActive && (
             <motion.span
               layoutId="tab-underline"
-              className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary"
+              className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
             />
           )}
         </>
@@ -116,23 +118,27 @@ export default function PublicTournamentLayout() {
   return (
     <div style={accentStyle(t.primaryColor)}>
       {/* Hero */}
-      <div className="relative overflow-hidden border-b border-border/60">
-        <div
-          className="absolute inset-0 bg-grid opacity-40"
-          style={{
-            background: t.bannerImage
-              ? `linear-gradient(to top, hsl(var(--background)) 5%, transparent), url(${t.bannerImage}) center/cover`
-              : undefined,
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(900px circle at 15% -20%, rgb(var(--team-accent-rgb) / 0.25), transparent 60%)`,
-          }}
-        />
-        <div className="relative mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6">
-          <nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+      <div className="relative border-b border-border/60">
+        {/* Decorative layers are clipped on their own so floating UI (e.g. the
+            notification panel) anchored in the hero content can overflow freely. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="absolute inset-0 bg-grid opacity-35"
+            style={{
+              background: t.bannerImage
+                ? `linear-gradient(to top, hsl(var(--background)) 5%, transparent), url(${t.bannerImage}) center/cover`
+                : undefined,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(900px circle at 15% -20%, rgb(var(--team-accent-rgb) / 0.35), transparent 60%)`,
+            }}
+          />
+        </div>
+        <div className="relative mx-auto max-w-7xl px-4 pb-7 pt-10 sm:px-6">
+          <nav className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/45 px-3 py-1.5 text-xs text-muted-foreground">
             <Link to="/" className="transition-colors hover:text-foreground">Tournaments</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="truncate font-medium text-foreground/80">{t.name}</span>
@@ -146,30 +152,30 @@ export default function PublicTournamentLayout() {
                 {liveCount > 0 && (
                   <Link
                     to={`/t/${id}/fixtures`}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/25"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/25"
                   >
                     <Radio className="h-3 w-3" />
                     {liveCount} live now
                   </Link>
                 )}
               </div>
-              <h1 className="mt-3 font-display text-5xl leading-none tracking-wide sm:text-7xl">
+              <h1 className="mt-3 break-words font-display text-4xl leading-[0.95] tracking-[-0.02em] sm:text-6xl lg:text-7xl">
                 {t.name}
               </h1>
               {t.description && (
-                <p className="mt-3 max-w-2xl text-muted-foreground">{t.description}</p>
+                <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">{t.description}</p>
               )}
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+              <div className="mt-4 flex flex-wrap gap-x-3 gap-y-2 text-sm text-muted-foreground">
                 {(t.startDate || t.endDate) && (
-                  <span className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/50 px-3 py-1">
                     <CalendarDays className="h-4 w-4" />
                     {formatDate(t.startDate)} – {formatDate(t.endDate)}
                   </span>
                 )}
                 {t.venues?.length > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4" />
-                    {t.venues.join(', ')}
+                  <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 bg-card/50 px-3 py-1">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span className="truncate" title={t.venues.join(', ')}>{t.venues.join(', ')}</span>
                   </span>
                 )}
               </div>
@@ -185,8 +191,8 @@ export default function PublicTournamentLayout() {
       </div>
 
       {/* Tab bar */}
-      <div className="sticky top-16 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto scrollbar-thin px-4 sm:px-6">
+      <div className="sticky top-16 z-30 border-b border-border/60 bg-background/82 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto scrollbar-thin px-4 py-2 sm:px-6">
           <Tab to={`/t/${id}`} label="Overview" end />
           <Tab to={`/t/${id}/standings`} label="Standings" />
           <Tab to={`/t/${id}/fixtures`} label="Fixtures" />

@@ -83,18 +83,18 @@ export default function AdminTournamentLayout() {
         <Link to="/admin"><ArrowLeft /> All tournaments</Link>
       </Button>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-4xl tracking-wide">{t.name}</h1>
+      <div className="surface-elevated mb-6 flex flex-wrap items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <h1 className="font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
         <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
         <TournamentStatusBadge status={t.status} />
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <NotificationBell linkTo={() => `/admin/t/${id}/fixtures`} />
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="flex gap-1 overflow-x-auto scrollbar-thin lg:flex-col">
+      <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          <nav className="surface-elevated flex gap-1 overflow-x-auto rounded-2xl p-2 scrollbar-thin lg:flex-col">
             {NAV.map((item) => {
               const Icon = item.icon;
               return (
@@ -104,10 +104,10 @@ export default function AdminTournamentLayout() {
                   end={item.end}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                      'flex items-center gap-2.5 whitespace-nowrap rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       isActive
-                        ? 'bg-primary/15 text-primary'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        ? 'border-primary/35 bg-primary/12 text-primary'
+                        : 'text-muted-foreground hover:border-border/70 hover:bg-secondary/75 hover:text-foreground'
                     )
                   }
                 >

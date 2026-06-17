@@ -7,13 +7,13 @@ import { cn } from '@/lib/utils';
  */
 export function PageHeader({ icon: Icon, title, description, actions, className }) {
   return (
-    <div className={cn('flex flex-wrap items-end justify-between gap-3', className)}>
+    <div className={cn('flex flex-wrap items-end justify-between gap-3 sm:gap-4', className)}>
       <div className="min-w-0">
-        <h1 className="flex items-center gap-2.5 font-display text-4xl tracking-wide">
+        <h1 className="flex items-center gap-2.5 font-display text-3xl tracking-[-0.02em] sm:text-4xl">
           {Icon && <Icon className="h-7 w-7 shrink-0 text-primary" />}
           <span className="truncate">{title}</span>
         </h1>
-        {description && <p className="mt-1 text-muted-foreground">{description}</p>}
+        {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>

@@ -141,9 +141,9 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
       </DialogHeader>
 
       {/* Scoreboard */}
-      <div className="flex items-center justify-center gap-4 rounded-xl border border-border bg-background/50 p-4">
+      <div className="surface-elevated flex items-center justify-center gap-4 rounded-2xl border border-border/75 p-4">
         <span className="flex-1 truncate text-right text-sm font-medium">{teamName(teamAId)}</span>
-        <span className="font-display text-4xl tabular-nums">{score.a} : {score.b}</span>
+        <span className="font-display text-4xl tabular-nums tracking-[-0.02em]">{score.a} : {score.b}</span>
         <span className="flex-1 truncate text-sm font-medium">{teamName(teamBId)}</span>
       </div>
 
@@ -156,7 +156,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
       </div>
 
       {/* Add goal */}
-      <div className="space-y-2 rounded-lg border border-border p-3">
+      <div className="surface-elevated space-y-2 rounded-2xl border border-border/75 p-3">
         <p className="flex items-center gap-1.5 text-sm font-semibold"><Goal className="h-4 w-4 text-accent" /> Goal</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Select value={goalForm.team} onValueChange={(v) => setGoalForm({ ...goalForm, team: v, playerId: '', assistId: '' })}>
@@ -180,7 +180,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
 
       {/* Add card + sub */}
       <div className="grid gap-2 sm:grid-cols-2">
-        <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="surface-elevated space-y-2 rounded-2xl border border-border/75 p-3">
           <p className="flex items-center gap-1.5 text-sm font-semibold"><Square className="h-4 w-4 text-[hsl(var(--warning))]" /> Card</p>
           <div className="grid grid-cols-2 gap-2">
             <Select value={cardForm.team} onValueChange={(v) => setCardForm({ ...cardForm, team: v, playerId: '' })}>
@@ -199,7 +199,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
           <Button size="sm" variant="outline" onClick={addCard} className="w-full">Add card</Button>
         </div>
 
-        <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="surface-elevated space-y-2 rounded-2xl border border-border/75 p-3">
           <p className="flex items-center gap-1.5 text-sm font-semibold"><ArrowLeftRight className="h-4 w-4" /> Substitution</p>
           <Select value={subForm.team} onValueChange={(v) => setSubForm({ ...subForm, team: v, playerOutId: '', playerInId: '' })}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -218,14 +218,14 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
 
       {/* Timeline */}
       {(goals.length > 0 || cards.length > 0 || subs.length > 0) && (
-        <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border/60 p-2 scrollbar-thin">
+        <div className="surface-elevated max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-border/70 p-2 scrollbar-thin">
           {goals.map((g, i) => (
             <div key={`g${i}`} className="flex items-center gap-2 text-sm">
               <Goal className="h-3.5 w-3.5 text-accent" />
               <span className="text-muted-foreground">{g.minute != null ? `${g.minute}'` : ''}</span>
               <span className="truncate">{g.scorer || pName(g.playerId) || teamName(g.team)}{g.type === 'ownGoal' ? ' (OG)' : ''}{g.type === 'penalty' ? ' (pen)' : ''}</span>
               <Badge variant="outline" className="ml-auto">{teamsById[g.team]?.shortCode}</Badge>
-              <button onClick={() => removeGoal(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => removeGoal(i)} aria-label="Remove goal" className="rounded-sm text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           ))}
           {cards.map((c, i) => (
@@ -234,7 +234,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
               <span className="text-muted-foreground">{c.minute != null ? `${c.minute}'` : ''}</span>
               <span className="truncate">{c.player || pName(c.playerId) || teamName(c.team)} · {c.type}</span>
               <Badge variant="outline" className="ml-auto">{teamsById[c.team]?.shortCode}</Badge>
-              <button onClick={() => removeCard(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => removeCard(i)} aria-label="Remove card" className="rounded-sm text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           ))}
           {subs.map((s, i) => (
@@ -243,7 +243,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
               <span className="text-muted-foreground">{s.minute != null ? `${s.minute}'` : ''}</span>
               <span className="truncate">{s.playerIn || pName(s.playerInId)} ↔ {s.playerOut || pName(s.playerOutId)}</span>
               <Badge variant="outline" className="ml-auto">{teamsById[s.team]?.shortCode}</Badge>
-              <button onClick={() => removeSub(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => removeSub(i)} aria-label="Remove substitution" className="rounded-sm text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           ))}
         </div>
@@ -251,7 +251,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
 
       {/* Knockout penalties */}
       {isKnockout && score.a === score.b && (
-        <div className="rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.08)] p-3">
+        <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Penalty shootout (knockout tie)</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1"><Label className="text-xs">{teamsById[teamAId]?.shortCode} pens</Label><Input type="number" min="0" value={pens.teamA} onChange={(e) => setPens({ ...pens, teamA: e.target.value })} className="h-9" /></div>
@@ -273,7 +273,7 @@ export default function FootballConsole({ tournament, tournamentId, fixture, ros
         <PlayerSelect value={motm} onChange={setMotm} players={allRoster} placeholder="Select" />
       </div>
 
-      <DialogFooter className="!justify-between">
+      <DialogFooter className="!flex !flex-row !flex-wrap items-center !justify-between gap-2">
         {liveUpdate.isPending
           ? <Badge variant="live" className="gap-1"><span className="live-dot h-1.5 w-1.5 rounded-full bg-destructive" /> Syncing</Badge>
           : <span />}

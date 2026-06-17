@@ -38,32 +38,45 @@ export default function MatchTimeline({ goals = [], cards = [], substitutions = 
 
   const Row = ({ teamId, above }) => {
     const list = events.filter((e) => e.team === teamId);
+    // Events on the same minute would stack on the exact same spot; fan them out
+    // horizontally (centred on the minute) so each marker stays readable.
+    const byMinute = new Map();
+    for (const e of list) {
+      const k = String(e.minute);
+      if (!byMinute.has(k)) byMinute.set(k, []);
+      byMinute.get(k).push(e);
+    }
     return (
       <div className="relative h-9">
-        {list.map((e) => (
-          <div
-            key={e.key}
-            className="absolute -translate-x-1/2"
-            style={{ left: pct(e.minute), [above ? 'bottom' : 'top']: 0 }}
-            title={`${e.minute}' — ${e.label}`}
-          >
-            <Marker e={e} />
-          </div>
-        ))}
+        {list.map((e) => {
+          const group = byMinute.get(String(e.minute));
+          const idx = group.indexOf(e);
+          const offset = (idx - (group.length - 1) / 2) * 16;
+          return (
+            <div
+              key={e.key}
+              className="absolute -translate-x-1/2"
+              style={{ left: pct(e.minute), marginLeft: `${offset}px`, zIndex: idx + 1, [above ? 'bottom' : 'top']: 0 }}
+              title={`${e.minute}' — ${e.label}`}
+            >
+              <Marker e={e} />
+            </div>
+          );
+        })}
       </div>
     );
   };
 
   return (
-    <div className="w-full">
+    <div className="surface-elevated w-full rounded-2xl border border-border/70 p-4">
       <div className="mb-1 flex justify-between text-xs font-medium text-muted-foreground">
         <span>{teamsById[aId]?.shortCode || 'A'}</span>
         <span>{teamsById[String(teamB)]?.shortCode || 'B'}</span>
       </div>
       <Row teamId={aId} above />
-      <div className="relative h-px bg-border">
+      <div className="relative h-px bg-border/85">
         {[0, 15, 30, 45, 60, 75, 90].filter((m) => m <= maxMin).map((m) => (
-          <span key={m} className="absolute -translate-x-1/2 -top-2 text-[9px] text-muted-foreground" style={{ left: pct(m) }}>
+          <span key={m} className="absolute -translate-x-1/2 -top-2 text-[10px] tabular-nums text-muted-foreground" style={{ left: pct(m) }}>
             {m}'
           </span>
         ))}

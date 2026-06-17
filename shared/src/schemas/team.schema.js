@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CRICKET_ROLES, FOOTBALL_POSITIONS } from '../constants.js';
+import { CRICKET_ROLES, FOOTBALL_POSITIONS, PLAYER_CATEGORIES } from '../constants.js';
 import { hexColor, nonEmptyString, objectId } from './common.js';
 
 export const createTeamSchema = z.object({
@@ -32,6 +32,8 @@ export const playerSchema = z.object({
       .enum([...CRICKET_ROLES, ...FOOTBALL_POSITIONS])
       .optional(),
     jerseyNumber: z.number().int().min(0).max(999).optional(),
+    // Manually-assigned tier (S++ … D). `null` clears it back to "Unrated".
+    category: z.enum(PLAYER_CATEGORIES).nullable().optional(),
   }),
 });
 

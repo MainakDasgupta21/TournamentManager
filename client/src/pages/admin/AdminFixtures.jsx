@@ -15,9 +15,11 @@ import { FixtureStatusBadge } from '@/components/ui/status-badge';
 import { useConfirm } from '@/components/ui/confirm';
 import { TeamCrest, EmptyState, ErrorState, Spinner, SkeletonGrid, FilterChip, SearchInput } from '@/components/ui/misc';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/ui/page-header';
 import ResultEntryDialog from '@/components/admin/ResultEntryDialog';
 import LiveScoring from '@/components/admin/LiveScoring';
 import { formatDateTime, resultSummary } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 function GenerateCard({ tournament, tournamentId, hasFixtures }) {
   const { generateGroupStage } = useFixtureMutations(tournamentId);
@@ -56,20 +58,20 @@ function GenerateCard({ tournament, tournamentId, hasFixtures }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><CalendarPlus className="h-4 w-4" /> Generate group fixtures</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-end gap-4">
+      <CardContent className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
-          <Label>First match date</Label>
-          <Input type="date" value={opts.startDate} onChange={(e) => setOpts({ ...opts, startDate: e.target.value })} className="w-44" />
+          <Label htmlFor="gen-start-date">First match date</Label>
+          <Input id="gen-start-date" type="date" value={opts.startDate} onChange={(e) => setOpts({ ...opts, startDate: e.target.value })} className="w-full" />
         </div>
         <div className="space-y-1.5">
-          <Label>Days between rounds</Label>
-          <Input type="number" min={0} value={opts.daysBetweenRounds} onChange={(e) => setOpts({ ...opts, daysBetweenRounds: e.target.value })} className="w-36" />
+          <Label htmlFor="gen-days-between">Days between rounds</Label>
+          <Input id="gen-days-between" type="number" min={0} value={opts.daysBetweenRounds} onChange={(e) => setOpts({ ...opts, daysBetweenRounds: e.target.value })} className="w-full" />
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+        <div className="flex h-10 items-center justify-between gap-2 rounded-xl border border-border/75 bg-card/55 px-3">
           <span className="text-sm">Double round-robin</span>
           <Switch checked={opts.doubleRoundRobin} onCheckedChange={(v) => setOpts({ ...opts, doubleRoundRobin: v })} />
         </div>
-        <Button onClick={run} disabled={generateGroupStage.isPending} variant={hasFixtures ? 'outline' : 'default'}>
+        <Button className="w-full" onClick={run} disabled={generateGroupStage.isPending} variant={hasFixtures ? 'outline' : 'default'}>
           <Zap /> {hasFixtures ? 'Regenerate (overwrite)' : 'Generate fixtures'}
         </Button>
       </CardContent>
@@ -109,12 +111,13 @@ function ScheduleDialog({ tournament, fixture, saving, onSave, onClose }) {
       </DialogHeader>
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label>Date &amp; time</Label>
-          <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+          <Label htmlFor="fixture-when">Date &amp; time</Label>
+          <Input id="fixture-when" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Venue</Label>
+          <Label htmlFor="fixture-venue">Venue</Label>
           <Input
+            id="fixture-venue"
             list="fixture-venue-options"
             value={venue}
             onChange={(e) => setVenue(e.target.value)}
@@ -141,32 +144,50 @@ function FixtureRow({ fixture, sport, onResult, onLive, onToggleLive, onReopen, 
   const live = fixture.status === 'live';
   const playable = fixture.teamA && fixture.teamB;
   const winnerId = fixture.winner?._id || fixture.winner;
+  const aWins = completed && String(winnerId) === String(fixture.teamA?._id);
+  const bWins = completed && String(winnerId) === String(fixture.teamB?._id);
+  const aName = fixture.teamA?.name || fixture.placeholderA || 'TBD';
+  const bName = fixture.teamB?.name || fixture.placeholderB || 'TBD';
+  const score = completed ? resultSummary(fixture) || 'vs' : 'vs';
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card/50 p-3">
-      <span className="w-8 text-center text-xs font-bold text-muted-foreground">{fixture.matchNumber ?? '–'}</span>
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <div className="flex flex-1 items-center justify-end gap-2 text-right">
-          <span className={String(winnerId) === String(fixture.teamA?._id) ? 'font-semibold' : ''}>
-            {fixture.teamA?.name || fixture.placeholderA || 'TBD'}
-          </span>
-          {fixture.teamA && <TeamCrest team={fixture.teamA} size="sm" />}
-        </div>
-        <span className="px-2 text-xs font-bold text-muted-foreground">
-          {completed ? (resultSummary(fixture) || 'vs') : 'vs'}
+    <div className="surface-elevated surface-interactive flex flex-col gap-3 rounded-2xl border border-border/75 p-3 lg:flex-row lg:items-center lg:gap-4">
+      {/* Matchup: match number + both teams (names truncate so the row can't overflow). */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="w-6 shrink-0 text-center text-xs font-bold text-muted-foreground">
+          {fixture.matchNumber ?? '–'}
         </span>
-        <div className="flex flex-1 items-center gap-2">
-          {fixture.teamB && <TeamCrest team={fixture.teamB} size="sm" />}
-          <span className={String(winnerId) === String(fixture.teamB?._id) ? 'font-semibold' : ''}>
-            {fixture.teamB?.name || fixture.placeholderB || 'TBD'}
-          </span>
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
+            <span className={cn('truncate', aWins && 'font-semibold')}>{aName}</span>
+            {fixture.teamA && (
+              <span className="shrink-0">
+                <TeamCrest team={fixture.teamA} size="sm" />
+              </span>
+            )}
+          </div>
+          <span className="shrink-0 whitespace-nowrap px-1 text-xs font-bold text-muted-foreground">{score}</span>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {fixture.teamB && (
+              <span className="shrink-0">
+                <TeamCrest team={fixture.teamB} size="sm" />
+              </span>
+            )}
+            <span className={cn('truncate', bWins && 'font-semibold')}>{bName}</span>
+          </div>
         </div>
       </div>
-      <span className="w-full text-xs text-muted-foreground sm:w-auto">
-        {formatDateTime(fixture.scheduledAt)}{fixture.venue ? ` · ${fixture.venue}` : ''}
-      </span>
-      <FixtureStatusBadge status={fixture.status} sport={sport} />
-      <div className="flex gap-1.5">
+
+      {/* Schedule + status. */}
+      <div className="flex min-w-0 items-center justify-between gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
+        <span className="truncate text-xs text-muted-foreground">
+          {formatDateTime(fixture.scheduledAt)}{fixture.venue ? ` · ${fixture.venue}` : ''}
+        </span>
+        <FixtureStatusBadge status={fixture.status} sport={sport} />
+      </div>
+
+      {/* Actions wrap instead of overflowing on narrow widths. */}
+      <div className="flex flex-wrap gap-1.5 lg:shrink-0 lg:justify-end">
         <Tooltip label="Edit date & venue">
           <Button size="sm" variant="outline" onClick={() => onSchedule(fixture)} aria-label="Edit date and venue">
             <CalendarClock />
@@ -222,6 +243,27 @@ const STATUS_FILTERS = [
   { id: 'scheduled', label: 'Upcoming' },
   { id: 'completed', label: 'Completed' },
 ];
+
+/**
+ * Bucket group-stage fixtures by their round-robin round, in ascending order,
+ * so the list can render under sticky "Round N" headers. Undated/round-less
+ * fixtures fall into a trailing "Other" bucket.
+ */
+function groupByRound(list) {
+  const map = new Map();
+  for (const f of list) {
+    const key = f.groupRound ?? Infinity;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(f);
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([round, items]) => ({
+      key: round === Infinity ? 'other' : `round-${round}`,
+      label: round === Infinity ? 'Other' : `Round ${round}`,
+      fixtures: items.sort((x, y) => (x.matchNumber ?? 0) - (y.matchNumber ?? 0)),
+    }));
+}
 
 export default function AdminFixtures() {
   const { tournament, tournamentId } = useOutletContext();
@@ -296,32 +338,54 @@ export default function AdminFixtures() {
     }
   };
 
-  const renderList = (list, total) =>
-    list.length ? (
-      <div className="space-y-2">
-        {list.map((f) => (
-          <FixtureRow
-            key={f._id}
-            fixture={f}
-            sport={tournament.sportType}
-            onResult={setResultTarget}
-            onLive={setLiveTarget}
-            onToggleLive={toggleLive}
-            onReopen={reopen}
-            onSchedule={setScheduleTarget}
-            toggling={togglingId === f._id}
-          />
-        ))}
-      </div>
-    ) : total > 0 ? (
+  const renderRow = (f) => (
+    <FixtureRow
+      key={f._id}
+      fixture={f}
+      sport={tournament.sportType}
+      onResult={setResultTarget}
+      onLive={setLiveTarget}
+      onToggleLive={toggleLive}
+      onReopen={reopen}
+      onSchedule={setScheduleTarget}
+      toggling={togglingId === f._id}
+    />
+  );
+
+  const emptyState = (total) =>
+    total > 0 ? (
       <EmptyState icon={Search} title="No matching fixtures" description="No fixtures match the current filter or search." />
     ) : (
       <EmptyState icon={CalendarPlus} title="No fixtures" description="Generate group fixtures above." />
     );
 
+  const renderList = (list, total) =>
+    list.length ? <div className="space-y-2">{list.map(renderRow)}</div> : emptyState(total);
+
+  // Group tab: bucket by round-robin round under sticky "Round N" headers.
+  const renderRounds = (list, total) =>
+    list.length ? (
+      <div className="space-y-6">
+        {groupByRound(list).map((round) => (
+          <div key={round.key}>
+            <h3 className="sticky top-16 z-20 -mx-1 mb-2 rounded-xl border border-border/70 bg-background/90 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/75">
+              {round.label}
+              <span className="ml-2 font-normal normal-case text-muted-foreground/70">
+                {round.fixtures.length} {round.fixtures.length === 1 ? 'match' : 'matches'}
+              </span>
+            </h3>
+            <div className="space-y-2">{round.fixtures.map(renderRow)}</div>
+          </div>
+        ))}
+      </div>
+    ) : emptyState(total);
+
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-3xl tracking-wide">Fixtures &amp; results</h2>
+      <PageHeader
+        title="Fixtures & results"
+        description="Generate schedules, go live instantly, and update outcomes without leaving the workflow."
+      />
       <GenerateCard tournament={tournament} tournamentId={tournamentId} hasFixtures={group.length > 0} />
 
       {!isLoading && fixtures.length > 0 && (
@@ -352,7 +416,7 @@ export default function AdminFixtures() {
             <TabsTrigger value="group">Group ({fGroup.length})</TabsTrigger>
             <TabsTrigger value="knockout">Knockout ({fKnockout.length})</TabsTrigger>
           </TabsList>
-          <TabsContent value="group">{renderList(fGroup, group.length)}</TabsContent>
+          <TabsContent value="group">{renderRounds(fGroup, group.length)}</TabsContent>
           <TabsContent value="knockout">{renderList(fKnockout, knockout.length)}</TabsContent>
         </Tabs>
       )}

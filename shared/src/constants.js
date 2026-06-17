@@ -63,6 +63,13 @@ export const CRICKET_ROLES = Object.freeze([
 export const FOOTBALL_POSITIONS = Object.freeze(['GK', 'DEF', 'MID', 'FWD']);
 
 /**
+ * Manually-assigned player tier/category (a draft/auction-style grading), from
+ * strongest to weakest. Sport-agnostic and optional — a player with no category
+ * is treated as "Unrated".
+ */
+export const PLAYER_CATEGORIES = Object.freeze(['S++', 'S', 'A', 'B', 'C', 'D']);
+
+/**
  * Tiebreakers available per sport. The admin orders a subset of these in
  * `pointsConfig.tiebreakerOrder`; the standings engine applies them in order.
  */

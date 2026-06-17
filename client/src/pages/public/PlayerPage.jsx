@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CountUp } from '@/components/ui/count-up';
 import { EmptyState, ErrorState, Skeleton, TeamCrest } from '@/components/ui/misc';
+import { PlayerCategoryBadge } from '@/components/ui/player-category-badge';
 import { formatDate } from '@/lib/format';
 import { accentStyle, cn } from '@/lib/utils';
 
@@ -200,6 +201,7 @@ export default function PlayerPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {player.role && <Badge variant="outline" className="uppercase">{player.role}</Badge>}
+            <PlayerCategoryBadge category={player.category} />
             {player.jerseyNumber != null && <span className="text-sm text-muted-foreground">#{player.jerseyNumber}</span>}
           </div>
           <h1 className="font-display text-4xl tracking-wide sm:text-5xl">{player.name}</h1>

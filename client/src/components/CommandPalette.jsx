@@ -97,16 +97,16 @@ export default function CommandPalette() {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/65 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-[12vh] z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-card shadow-2xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2"
+          className="surface-elevated-strong fixed left-1/2 top-[12vh] z-50 flex max-h-[min(80vh,calc(100dvh-6rem))] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-border/80 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2"
           onOpenAutoFocus={(e) => {
             // Let the search input keep focus; default would focus the content.
             e.preventDefault();
           }}
         >
           <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
-          <div className="flex items-center gap-3 border-b border-border/60 px-4">
+          <div className="flex shrink-0 items-center gap-3 border-b border-border/60 bg-card/85 px-4">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               autoFocus
@@ -114,11 +114,11 @@ export default function CommandPalette() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKeyDown}
               placeholder="Search tournaments or jump to…"
-              className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/90"
             />
             <kbd className="hidden rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline">Esc</kbd>
           </div>
-          <div ref={listRef} className="max-h-[55vh] overflow-y-auto scrollbar-thin p-2">
+          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-thin p-2">
             {results.length ? (
               results.map((item, i) => {
                 const Icon = item.icon;
@@ -129,8 +129,10 @@ export default function CommandPalette() {
                     onClick={() => select(item)}
                     onMouseMove={() => setActive(i)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
-                      i === active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                      'flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm transition-colors',
+                      i === active
+                        ? 'border-primary/35 bg-primary/12 text-foreground'
+                        : 'text-muted-foreground hover:border-border/70 hover:bg-secondary/60'
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />

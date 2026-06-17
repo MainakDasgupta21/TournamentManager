@@ -11,7 +11,7 @@ const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-50 bg-black/65 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -25,7 +25,7 @@ const sides = {
   left:
     'inset-y-0 left-0 h-full w-full max-w-md border-r data-[state=open]:slide-in-from-left-2 data-[state=closed]:slide-out-to-left',
   bottom:
-    'inset-x-0 bottom-0 max-h-[90vh] rounded-t-2xl border-t data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:slide-out-to-bottom',
+    'inset-x-0 bottom-0 max-h-[90vh] rounded-t-3xl border-t data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:slide-out-to-bottom',
 };
 
 /**
@@ -39,7 +39,7 @@ const SheetContent = React.forwardRef(
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          'fixed z-50 flex flex-col gap-0 overflow-y-auto scrollbar-thin bg-card shadow-2xl border-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          'fixed z-50 flex flex-col gap-0 overflow-y-auto scrollbar-thin bg-card/95 shadow-[var(--shadow-elevated)] backdrop-blur-xl border-border/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           sides[side],
           className
         )}
@@ -47,7 +47,7 @@ const SheetContent = React.forwardRef(
       >
         {children}
         {showClose && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg border border-transparent bg-secondary/55 p-1.5 text-muted-foreground opacity-90 transition-colors hover:border-border/70 hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
@@ -60,7 +60,7 @@ SheetContent.displayName = 'SheetContent';
 
 const SheetHeader = ({ className, ...props }) => (
   <div
-    className={cn('sticky top-0 z-10 border-b border-border/60 bg-card/95 px-5 py-4 backdrop-blur', className)}
+    className={cn('sticky top-0 z-10 border-b border-border/60 bg-card/90 px-5 py-4 backdrop-blur-xl', className)}
     {...props}
   />
 );

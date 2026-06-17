@@ -18,6 +18,16 @@ export const fadeRise = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } },
 };
 
+/**
+ * Lightweight one-shot entrance for whole lists/panels. Animates the container
+ * as a single block instead of staggering every child, which keeps long
+ * fixture/standings lists smooth (one animation instead of N).
+ */
+export const sectionFade = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.32, ease: easeOut } },
+};
+
 /** Container that staggers its children in. Pair with `staggerItem`. */
 export const staggerContainer = {
   initial: {},

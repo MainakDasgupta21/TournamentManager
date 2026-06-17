@@ -6,7 +6,7 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => (
     type={type}
     ref={ref}
     className={cn(
-      'flex h-10 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      'flex h-10 w-full rounded-xl border border-input/85 bg-background/66 px-3 py-2 text-sm shadow-[var(--shadow-soft)] transition-[border-color,box-shadow,background-color] duration-150 placeholder:text-muted-foreground/90 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
       className
     )}
     {...props}
@@ -18,7 +18,7 @@ const Textarea = React.forwardRef(({ className, ...props }, ref) => (
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-20 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      'flex min-h-20 w-full rounded-xl border border-input/85 bg-background/66 px-3 py-2 text-sm shadow-[var(--shadow-soft)] transition-[border-color,box-shadow,background-color] duration-150 placeholder:text-muted-foreground/90 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
       className
     )}
     {...props}

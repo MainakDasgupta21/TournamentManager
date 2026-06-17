@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TeamCrest, EmptyState, ErrorState, SkeletonGrid } from '@/components/ui/misc';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -95,14 +96,17 @@ export default function AdminGroups() {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-3xl tracking-wide">Groups</h2>
+      <PageHeader
+        title="Groups"
+        description="Distribute teams quickly and fine-tune group composition with an efficient seeded flow."
+      />
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4" /> Seeded snake draft</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <Label>Number of groups</Label>
-            <Input type="number" min={1} value={numGroups} onChange={(e) => setNumGroups(e.target.value)} className="w-32" />
+            <Label htmlFor="num-groups">Number of groups</Label>
+            <Input id="num-groups" type="number" min={1} value={numGroups} onChange={(e) => setNumGroups(e.target.value)} className="w-32" />
           </div>
           <Button onClick={runAutoDistribute} disabled={autoDistribute.isPending}>
             <Shuffle /> Auto-distribute {teams.length} teams
@@ -120,7 +124,9 @@ export default function AdminGroups() {
       </Card>
 
       {unassigned.length > 0 && (
-        <p className="text-sm text-muted-foreground">{unassigned.length} team(s) not yet assigned to a group.</p>
+        <p className="rounded-xl border border-border/70 bg-card/55 px-3 py-2 text-sm text-muted-foreground">
+          {unassigned.length} team(s) not yet assigned to a group.
+        </p>
       )}
 
       {!groups.length ? (
@@ -140,7 +146,7 @@ export default function AdminGroups() {
               <CardContent className="space-y-3">
                 <ul className="space-y-1.5">
                   {group.teams.length ? group.teams.map((t) => (
-                    <li key={t._id} className="flex items-center gap-2.5 rounded-md bg-secondary/30 px-2.5 py-1.5">
+                    <li key={t._id} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/55 px-2.5 py-1.5">
                       <TeamCrest team={t} size="sm" />
                       <span className="flex-1 text-sm font-medium">{t.name}</span>
                       <Tooltip label="Remove from group">

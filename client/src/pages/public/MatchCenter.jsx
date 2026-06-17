@@ -8,7 +8,7 @@ import { qk } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FixtureStatusBadge } from '@/components/ui/status-badge';
-import { TeamCrest, EmptyState, Skeleton } from '@/components/ui/misc';
+import { TeamCrest, EmptyState, ErrorState, Skeleton } from '@/components/ui/misc';
 import { formatDateTime, oversDisplay } from '@/lib/format';
 import { inningsSummary, flattenOvers } from '@/lib/cricket';
 import { hasBallDetail } from '@/lib/cricketSeries';
@@ -58,7 +58,7 @@ function footballTally(goals = [], teamAId, teamBId) {
 function TeamHeader({ team, placeholder, score, sub, isWinner }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
-      {team ? <TeamCrest team={team} size="lg" /> : <div className="h-12 w-12 rounded-md bg-secondary" />}
+      {team ? <TeamCrest team={team} size="lg" /> : <div className="h-12 w-12 rounded-xl bg-secondary" />}
       <p className={cn('text-sm font-medium', isWinner && 'text-[hsl(var(--success))]')}>
         {team?.name || placeholder || 'TBD'}
       </p>
@@ -74,7 +74,7 @@ export default function MatchCenter() {
   const qc = useQueryClient();
   const sport = tournament.sportType;
 
-  const { data: fixture, isLoading } = useFixture(fixtureId);
+  const { data: fixture, isLoading, isError, refetch } = useFixture(fixtureId);
 
   const teamAId = fixture?.teamA?._id;
   const teamBId = fixture?.teamB?._id;
@@ -131,8 +131,32 @@ export default function MatchCenter() {
     );
   }
 
+  if (isError) {
+    return (
+      <ErrorState
+        title="Couldn't load this match"
+        description="There was a problem reaching the server. Please try again."
+        onRetry={refetch}
+      />
+    );
+  }
+
   if (!fixture) {
-    return <EmptyState icon={Trophy} title="Match not found" description="This fixture may have been removed." />;
+    return (
+      <EmptyState
+        icon={Trophy}
+        title="Match not found"
+        description="This fixture may have been removed."
+        action={
+          <Link
+            to={`/t/${tournamentId}/fixtures`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to fixtures
+          </Link>
+        }
+      />
+    );
   }
 
   const completed = fixture.status === 'completed';
@@ -213,7 +237,7 @@ export default function MatchCenter() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 px-4 py-3">
         <Link to={`/t/${tournamentId}/fixtures`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to fixtures
         </Link>
@@ -221,7 +245,7 @@ export default function MatchCenter() {
       </div>
 
       {/* Scorecard header */}
-      <Card id="print-root" className={cn(isLive && 'border-destructive/40')}>
+      <Card id="print-root" className={cn('surface-elevated-strong', isLive && 'border-destructive/40')}>
         <CardContent className="p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span className="truncate">
@@ -333,7 +357,7 @@ export default function MatchCenter() {
             {reversedFeed.length ? (
               <ul className="max-h-[28rem] space-y-1.5 overflow-y-auto scrollbar-thin pr-1">
                 {reversedFeed.map((line) => (
-                  <li key={line.id} className={cn('flex items-start gap-2 rounded-lg border px-3 py-2 text-sm', KIND_STYLE[line.kind] ?? KIND_STYLE.run)}>
+                  <li key={line.id} className={cn('flex items-start gap-2 rounded-xl border px-3 py-2 text-sm', KIND_STYLE[line.kind] ?? KIND_STYLE.run)}>
                     <span className="min-w-10 shrink-0 font-mono text-xs font-semibold tabular-nums opacity-80">{line.marker}</span>
                     <span className="flex-1">{line.text}</span>
                   </li>

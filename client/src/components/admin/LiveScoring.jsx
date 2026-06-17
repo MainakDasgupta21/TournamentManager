@@ -1,7 +1,7 @@
 import { useTeam } from '@/hooks/queries';
 import { SPORTS } from '@tms/shared/constants';
 import { DialogContent } from '@/components/ui/dialog';
-import { Loading } from '@/components/ui/misc';
+import { Loading, ErrorState } from '@/components/ui/misc';
 import CricketConsole from './CricketConsole';
 import FootballConsole from './FootballConsole';
 
@@ -17,6 +17,7 @@ export default function LiveScoring({ tournament, tournamentId, fixture, onClose
   const b = useTeam(tournamentId, teamBId);
 
   const ready = a.isSuccess && b.isSuccess;
+  const failed = a.isError || b.isError;
   const rosterByTeam = {
     [teamAId]: a.data?.players ?? [],
     [teamBId]: b.data?.players ?? [],
@@ -29,8 +30,16 @@ export default function LiveScoring({ tournament, tournamentId, fixture, onClose
   const Console = tournament.sportType === SPORTS.CRICKET ? CricketConsole : FootballConsole;
 
   return (
-    <DialogContent className="max-w-2xl">
-      {!ready ? (
+    <DialogContent className="max-w-3xl">
+      {failed ? (
+        <div className="py-6">
+          <ErrorState
+            title="Couldn't load rosters"
+            description="The team rosters needed for scoring could not be loaded. Please try again."
+            onRetry={() => { a.refetch(); b.refetch(); }}
+          />
+        </div>
+      ) : !ready ? (
         <div className="py-10"><Loading label="Loading rosters…" /></div>
       ) : (
         <Console

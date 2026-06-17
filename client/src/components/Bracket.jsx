@@ -10,7 +10,7 @@ function Slot({ team, label, isWinner, dimmed }) {
     <div
       className={cn(
         'flex items-center gap-2 px-3 py-2 transition-colors',
-        isWinner && 'bg-[hsl(var(--success)/0.1)]',
+        isWinner && 'bg-[hsl(var(--success)/0.12)]',
         dimmed && 'opacity-45'
       )}
     >
@@ -36,6 +36,8 @@ function MatchupCard({ matchup, roundName, onPick }) {
   const live = fx?.status === 'live';
   // Only show a per-matchup caption when it adds info beyond the column header.
   const caption = matchup.matchupName && matchup.matchupName !== roundName ? matchup.matchupName : null;
+  const aName = matchup.slotA?.name || matchup.slotALabel || 'TBD';
+  const bName = matchup.slotB?.name || matchup.slotBLabel || 'TBD';
 
   return (
     <motion.button
@@ -44,16 +46,19 @@ function MatchupCard({ matchup, roundName, onPick }) {
       initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -2 }}
+      whileHover={onPick ? { y: -2 } : undefined}
       onClick={() => onPick?.(matchup, roundName)}
+      tabIndex={onPick ? undefined : -1}
+      aria-label={onPick ? `View match details: ${aName} versus ${bName}` : undefined}
       className={cn(
-        'block w-60 overflow-hidden rounded-lg border bg-card text-left shadow-sm transition-colors',
-        live ? 'border-destructive/50' : 'border-border hover:border-primary/50',
-        onPick && 'cursor-pointer'
+        'surface-elevated surface-interactive block w-60 overflow-hidden rounded-2xl border bg-card/80 text-left transition-colors',
+        live ? 'border-destructive/50' : 'border-border/80',
+        onPick && 'cursor-pointer hover:border-primary/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        !onPick && 'cursor-default'
       )}
     >
       {caption && (
-        <p className="border-b border-border/60 bg-secondary/40 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <p className="border-b border-border/60 bg-secondary/45 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
           {caption}
         </p>
       )}
@@ -90,7 +95,7 @@ function ChampionBanner({ champion }) {
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-gradient-to-br from-[hsl(var(--warning)/0.18)] via-card to-card p-6"
+      className="surface-elevated-strong relative overflow-hidden rounded-3xl border border-[hsl(var(--warning)/0.4)] bg-gradient-to-br from-[hsl(var(--warning)/0.2)] via-card to-card p-6"
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 animate-aurora rounded-full bg-[hsl(var(--warning)/0.3)] blur-3xl" />
       <div className="relative flex items-center gap-5">
@@ -101,7 +106,7 @@ function ChampionBanner({ champion }) {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(var(--warning))]">Champions</p>
           <div className="mt-1 flex items-center gap-3">
             <TeamCrest team={champion} size="md" />
-            <h3 className="truncate font-display text-4xl tracking-wide">{champion.name}</h3>
+            <h3 className="truncate font-display text-4xl tracking-[-0.02em]">{champion.name}</h3>
           </div>
         </div>
       </div>
@@ -139,7 +144,7 @@ export default function Bracket({ bracket, onPickMatchup }) {
         <MoveHorizontal className="h-3.5 w-3.5" /> Swipe to explore the bracket
       </p>
 
-      <div className="overflow-x-auto pb-4 scrollbar-thin">
+      <div className="overflow-x-auto rounded-2xl border border-border/65 bg-card/35 p-4 pb-4 scrollbar-thin">
         <div className="flex min-w-min gap-8">
           {mainRounds.map((round, ri) => (
             <div key={ri} className="flex min-w-60 flex-col">

@@ -248,7 +248,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       </DialogHeader>
 
       {/* Scoreboard */}
-      <div className="rounded-xl border border-border bg-background/50 p-4">
+      <div className="surface-elevated rounded-2xl border border-border/75 p-4">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{teamName(cur.battingTeam)} batting</p>
@@ -286,7 +286,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       </div>
 
       {/* Batsmen + bowler */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <div className="space-y-1">
           <Label className="text-xs">Striker</Label>
           <PlayerSelect value={striker} onChange={(v) => { setStriker(v); if (v) setNeedBatsman(false); }} players={battingRoster} placeholder="On strike" />
@@ -303,19 +303,19 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       {needBatsman && <p className="text-xs text-[hsl(var(--warning))]">Wicket fell — select the new batsman on strike.</p>}
 
       {/* Scoring pad */}
-      <div className="grid grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {[0, 1, 2, 3, 4, 6].map((n) => (
           <Button key={n} variant={n === 4 || n === 6 ? 'accent' : 'secondary'} className="h-12 text-base" onClick={() => onRuns(n)}>
             {n}
           </Button>
         ))}
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Button variant="outline" className="h-10" onClick={() => onExtra('wide')}>Wide</Button>
         <Button variant="outline" className="h-10" onClick={() => onExtra('noball')}>No ball</Button>
         <Button variant="outline" className="h-10" onClick={() => onExtra('bye')}>Bye</Button>
         <Button variant="outline" className="h-10" onClick={() => onExtra('legbye')}>Leg bye</Button>
-        <Button variant="destructive" className="h-10" onClick={() => { setWkt({ type: 'bowled', playerOut: striker, fielder: '' }); setWicketOpen(true); }}>
+        <Button variant="destructive" className="col-span-2 h-10 sm:col-span-1" onClick={() => { setWkt({ type: 'bowled', playerOut: striker, fielder: '' }); setWicketOpen(true); }}>
           Wicket
         </Button>
       </div>
@@ -324,7 +324,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       {wicketOpen && (
         <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
           <p className="text-sm font-semibold text-destructive">Record wicket</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div className="space-y-1">
               <Label className="text-xs">How out</Label>
               <Select value={wkt.type} onValueChange={(v) => setWkt({ ...wkt, type: v })}>
@@ -354,7 +354,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       {finalize && (
         <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/5 p-3">
           <p className="text-sm font-semibold">Finalise result</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-xs">Winner</Label>
               <Select value={finalize.winner} onValueChange={(v) => setFinalize({ ...finalize, winner: v })}>
@@ -436,8 +436,8 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
         </div>
       )}
 
-      <DialogFooter className="!justify-between">
-        <div className="flex gap-2">
+      <DialogFooter className="!flex !flex-row !flex-wrap items-center !justify-between gap-2">
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={undo} disabled={!history.length}><Undo2 /> Undo</Button>
           {liveUpdate.isPending && <Badge variant="live" className="gap-1"><span className="live-dot h-1.5 w-1.5 rounded-full bg-destructive" /> Syncing</Badge>}
         </div>

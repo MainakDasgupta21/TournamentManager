@@ -5,7 +5,8 @@ import { Award, BarChart3, Crown } from 'lucide-react';
 import { useLeaderboards, useTournamentPlayers } from '@/hooks/queries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { EmptyState, SkeletonTable, TeamCrest } from '@/components/ui/misc';
+import { EmptyState, ErrorState, SkeletonTable, TeamCrest } from '@/components/ui/misc';
+import { PageHeader } from '@/components/ui/page-header';
 import BestEleven from '@/components/BestEleven';
 import { bestEleven } from '@/lib/bestEleven';
 import { cn } from '@/lib/utils';
@@ -167,7 +168,7 @@ function StatBoard({ board, rows, tournamentId }) {
   }
   const isTeam = board.entity === 'team';
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto scrollbar-thin">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -185,7 +186,7 @@ function StatBoard({ board, rows, tournamentId }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.025, 0.3) }}
-              className="border-b border-border/40 last:border-0 hover:bg-secondary/30"
+              className="group border-b border-border/40 last:border-0 hover:bg-secondary/30"
             >
               <td className={cn('sticky left-0 z-10 bg-card px-2 py-2.5 text-center font-display text-lg', RANK_ACCENT[i] || 'text-muted-foreground')}>
                 {i + 1}
@@ -243,7 +244,7 @@ function PlayerOfTournament({ tournamentId, potm, sport }) {
 
 export default function LeaderboardsPage() {
   const { tournament, tournamentId } = useOutletContext();
-  const { data: leaderboards, isLoading } = useLeaderboards(tournamentId);
+  const { data: leaderboards, isLoading, isError, refetch } = useLeaderboards(tournamentId);
   const { data: players = [] } = useTournamentPlayers(tournamentId);
 
   const boards = tournament.sportType === 'cricket' ? CRICKET_BOARDS : FOOTBALL_BOARDS;
@@ -262,6 +263,16 @@ export default function LeaderboardsPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <ErrorState
+        title="Couldn't load leaderboards"
+        description="There was a problem reaching the server. Please try again."
+        onRetry={refetch}
+      />
+    );
+  }
+
   const rows = leaderboards?.[activeBoard.key] ?? [];
   const hasAny = boards.some((b) => (leaderboards?.[b.key]?.length ?? 0) > 0) || leaderboards?.playerOfTournament;
 
@@ -277,6 +288,10 @@ export default function LeaderboardsPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Leaderboards"
+        description="Celebrate top performers with live-updating, trophy-worthy rankings."
+      />
       <PlayerOfTournament
         tournamentId={tournamentId}
         potm={leaderboards?.playerOfTournament}
@@ -292,11 +307,12 @@ export default function LeaderboardsPage() {
             key={b.key}
             type="button"
             onClick={() => setActive(b.key)}
+            aria-pressed={b.key === active}
             className={cn(
-              'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+              'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               b.key === active
-                ? 'border-primary bg-primary/15 text-primary'
-                : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                ? 'border-primary/40 bg-primary text-primary-foreground shadow-[var(--shadow-soft)]'
+                : 'border-border/80 bg-card/55 text-muted-foreground hover:border-primary/35 hover:bg-secondary/65 hover:text-foreground'
             )}
           >
             {b.label}
@@ -305,10 +321,10 @@ export default function LeaderboardsPage() {
       </div>
 
       <Card>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="mb-4 flex items-center gap-2">
             <span className="h-5 w-1.5 rounded-full" style={{ background: activeBoard.accent }} />
-            <h2 className="font-display text-2xl tracking-wide">{activeBoard.label}</h2>
+            <h2 className="font-display text-2xl tracking-[-0.02em]">{activeBoard.label}</h2>
             {activeBoard.tag && <Badge variant="secondary">{activeBoard.tag}</Badge>}
           </div>
           <StatBoard board={activeBoard} rows={rows} tournamentId={tournamentId} />

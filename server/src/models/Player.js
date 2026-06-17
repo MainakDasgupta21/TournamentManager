@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { PLAYER_CATEGORIES } from '@tms/shared/constants';
 
 /**
  * Cached, derived aggregate stats (Module 5 / 7B). These are NOT entered by
@@ -68,6 +69,8 @@ const playerSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true, maxlength: 120 },
     role: { type: String, default: '' },
     jerseyNumber: { type: Number, default: null },
+    // Manually-assigned tier (S++ … D). `null` = Unrated.
+    category: { type: String, enum: [...PLAYER_CATEGORIES, null], default: null },
 
     // Cached derived stats. Only the relevant sport's section is populated.
     stats: {

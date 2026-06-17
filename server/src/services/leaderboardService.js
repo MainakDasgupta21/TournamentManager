@@ -29,6 +29,7 @@ function projectPlayer(p) {
     name: p.name,
     role: p.role,
     jerseyNumber: p.jerseyNumber,
+    category: p.category ?? null,
     teamId: id(team?._id ?? p.teamId),
     team: team
       ? { _id: id(team._id), name: team.name, shortCode: team.shortCode, primaryColor: team.primaryColor }

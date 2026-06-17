@@ -4,56 +4,66 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.75rem;
+  --radius: 1rem;
 
-  /* Light palette (default for no-JS / `.light`). HSL components. */
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
+  /* Premium light palette (default for no-JS / `.light`). */
+  --background: 220 34% 97%;
+  --foreground: 224 39% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 224 39% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 243 75% 58%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 214 32% 91%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 214 32% 94%;
-  --muted-foreground: 215 16% 42%;
-  --accent: 199 89% 44%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 48%;
+  --popover-foreground: 224 39% 10%;
+  --primary: 244 84% 64%;
+  --primary-foreground: 240 100% 99%;
+  --secondary: 220 24% 92%;
+  --secondary-foreground: 224 39% 15%;
+  --muted: 220 24% 95%;
+  --muted-foreground: 220 14% 42%;
+  --accent: 187 92% 41%;
+  --accent-foreground: 220 40% 98%;
+  --destructive: 0 74% 51%;
   --destructive-foreground: 210 40% 98%;
-  --success: 142 64% 36%;
-  --warning: 32 95% 44%;
-  --border: 214 32% 86%;
-  --input: 214 32% 86%;
-  --ring: 243 75% 58%;
+  --success: 145 70% 39%;
+  --warning: 38 94% 48%;
+  --border: 220 20% 86%;
+  --input: 220 23% 88%;
+  --ring: 244 84% 64%;
+
+  --shadow-soft: 0 12px 35px -24px hsl(224 48% 12% / 0.32);
+  --shadow-elevated:
+    0 24px 70px -35px hsl(244 84% 64% / 0.42),
+    0 10px 30px -18px hsl(224 48% 12% / 0.28);
 }
 
 /* Broadcast-grade dark palette. Active when `<html class="dark">` (the default,
  * set in index.html + by the pre-paint theme script). */
 .dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 98%;
-  --card: 222 40% 9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 44% 8%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 243 75% 65%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217 33% 14%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 199 89% 48%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 72% 51%;
+  --background: 222 46% 7%;
+  --foreground: 220 33% 96%;
+  --card: 223 38% 10%;
+  --card-foreground: 220 33% 96%;
+  --popover: 223 40% 9%;
+  --popover-foreground: 220 33% 96%;
+  --primary: 244 88% 71%;
+  --primary-foreground: 224 42% 10%;
+  --secondary: 220 28% 17%;
+  --secondary-foreground: 220 33% 95%;
+  --muted: 220 28% 14%;
+  --muted-foreground: 220 17% 68%;
+  --accent: 186 92% 45%;
+  --accent-foreground: 220 33% 96%;
+  --destructive: 0 78% 58%;
   --destructive-foreground: 210 40% 98%;
-  --success: 142 71% 45%;
-  --warning: 38 92% 50%;
-  --border: 217 33% 18%;
-  --input: 217 33% 18%;
-  --ring: 243 75% 65%;
+  --success: 146 70% 47%;
+  --warning: 39 96% 55%;
+  --border: 220 25% 18%;
+  --input: 220 25% 20%;
+  --ring: 244 88% 71%;
+
+  --shadow-soft: 0 14px 40px -24px hsl(220 50% 3% / 0.72);
+  --shadow-elevated:
+    0 30px 80px -38px hsl(244 88% 71% / 0.5),
+    0 12px 35px -18px hsl(220 50% 3% / 0.78);
 }
 
 @theme inline {
@@ -83,8 +93,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-display: 'Bebas Neue', 'Outfit', system-ui, sans-serif;
-  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -95,20 +105,76 @@
     scroll-behavior: smooth;
   }
   body {
+    min-height: 100vh;
     background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(1000px circle at 8% -10%, hsl(var(--primary) / 0.14), transparent 55%),
+      radial-gradient(900px circle at 92% -20%, hsl(var(--accent) / 0.12), transparent 52%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
     color: hsl(var(--foreground));
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition: background-color 260ms ease, color 220ms ease;
   }
-  /* Display headlines use the condensed broadcast face. */
+  a {
+    transition: color 160ms ease, opacity 160ms ease;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.26);
+    color: hsl(var(--foreground));
+  }
+  /* Display headlines use the premium geometric face. */
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: 0.02em;
+    letter-spacing: -0.015em;
   }
 }
 
 @layer utilities {
+  .surface-elevated {
+    border: 1px solid hsl(var(--border) / 0.78);
+    background: linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.82));
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-soft);
+  }
+  .surface-elevated-strong {
+    border: 1px solid hsl(var(--border) / 0.86);
+    background: linear-gradient(155deg, hsl(var(--card) / 0.95), hsl(var(--card) / 0.86));
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-elevated);
+  }
+  .surface-interactive {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease,
+      background-color 180ms ease;
+  }
+  /* Hover-lift only on devices with a true hover-capable pointer, so the lift
+     never sticks after a tap on touch screens. */
+  @media (hover: hover) {
+    .surface-interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-elevated);
+    }
+  }
+  .focus-ring {
+    outline: none;
+    box-shadow:
+      0 0 0 1px hsl(var(--background)),
+      0 0 0 3px hsl(var(--ring) / 0.5);
+  }
+  .text-gradient-brand {
+    background: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .page-shell {
+    margin-inline: auto;
+    width: min(100%, 80rem);
+  }
   /* Subtle stadium-grid backdrop used behind heroes. */
   .bg-grid {
     background-image:
@@ -124,6 +190,12 @@
   .mask-fade-x {
     -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
     mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+  /* Soft top/bottom fade for vertical scroll panels so clipped content reads as
+     intentional ("there's more below") instead of a hard cut. */
+  .scroll-fade-y {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 14px, black calc(100% - 14px), transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 14px, black calc(100% - 14px), transparent);
   }
   /* Marquee animation for the live ticker. */
   @keyframes marquee {

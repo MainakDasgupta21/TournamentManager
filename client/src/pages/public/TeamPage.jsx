@@ -8,6 +8,7 @@ import MatchDetail from '@/components/MatchDetail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountUp } from '@/components/ui/count-up';
 import { TeamCrest, Skeleton, EmptyState, ErrorState } from '@/components/ui/misc';
+import { PlayerCategoryBadge } from '@/components/ui/player-category-badge';
 import { teamForm, headToHead } from '@/lib/formGuide';
 import { accentStyle, cn } from '@/lib/utils';
 
@@ -69,6 +70,14 @@ export default function TeamPage() {
 
   const fixtures = data?.fixtures ?? [];
   const isCricket = tournament.sportType === 'cricket';
+  const statLine = (p) => {
+    if (isCricket) {
+      const c = p.stats?.cricket ?? {};
+      return `${c.matches ?? 0} M · ${c.runs ?? 0} runs · ${c.wickets ?? 0} wkts`;
+    }
+    const f = p.stats?.football ?? {};
+    return `${f.appearances ?? 0} apps · ${f.goals ?? 0} G · ${f.assists ?? 0} A`;
+  };
 
   const standing = useMemo(() => {
     for (const g of standings) {
@@ -184,18 +193,25 @@ export default function TeamPage() {
               <ul className="divide-y divide-border/50">
                 {players.map((p) => (
                   <li key={p._id} className="flex items-center gap-3 py-2.5">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-xs font-bold tabular-nums">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-bold tabular-nums">
                       {p.jerseyNumber ?? '–'}
                     </span>
-                    <Link
-                      to={`/t/${tournamentId}/players/${p._id}`}
-                      className="flex-1 font-medium hover:text-primary hover:underline"
-                    >
-                      {p.name}
-                    </Link>
-                    {p.role && (
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{p.role}</span>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/t/${tournamentId}/players/${p._id}`}
+                          className="truncate font-medium hover:text-primary hover:underline"
+                        >
+                          {p.name}
+                        </Link>
+                        <PlayerCategoryBadge category={p.category} size="xs" />
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {p.role && <span className="uppercase tracking-wider">{p.role}</span>}
+                        {p.role && ' · '}
+                        {statLine(p)}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>

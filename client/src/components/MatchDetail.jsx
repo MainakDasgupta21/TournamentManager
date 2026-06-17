@@ -43,7 +43,7 @@ function outcomeLine(fixture, sport) {
 
 function TeamRow({ team, placeholder, score, sub, isWinner, tournamentId, onNavigate }) {
   const inner = (
-    <div className={cn('flex items-center gap-3 rounded-lg p-3 transition-colors', isWinner ? 'bg-[hsl(var(--success)/0.08)]' : 'hover:bg-secondary/40')}>
+    <div className={cn('flex items-center gap-3 rounded-xl border border-transparent p-3 transition-colors', isWinner ? 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)]' : 'hover:border-border/70 hover:bg-secondary/40')}>
       {team ? <TeamCrest team={team} size="md" /> : <div className="h-9 w-9 rounded-md bg-secondary" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate', isWinner ? 'font-semibold' : 'font-medium')}>
@@ -124,7 +124,7 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate }) {
   return (
     <div className="space-y-5 p-5">
       {isLive && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
           <Radio className="h-4 w-4" /> Live now
           {sport === 'football' && live?.minute != null && <span className="ml-auto tabular-nums">{live.minute}'</span>}
         </div>
@@ -152,7 +152,7 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate }) {
       </div>
 
       {line && (
-        <p className="rounded-lg border border-border/60 bg-secondary/30 px-3 py-2 text-center text-sm font-medium">
+        <p className="rounded-xl border border-border/70 bg-secondary/40 px-3 py-2 text-center text-sm font-medium">
           {line}
         </p>
       )}

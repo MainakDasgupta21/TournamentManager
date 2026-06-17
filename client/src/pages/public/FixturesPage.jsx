@@ -221,7 +221,7 @@ export default function FixturesPage() {
 
           {byDay.map(([day, dayFixtures]) => (
             <div key={day}>
-              <h3 className="sticky top-28 z-10 -mx-1 mb-3 bg-background/90 px-1 py-1.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/70">
+              <h3 className="sticky top-[120px] z-10 -mx-1 mb-3 bg-background/90 px-1 py-1.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/70">
                 {day}
               </h3>
               <motion.div variants={staggerContainer} initial="initial" animate="animate" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

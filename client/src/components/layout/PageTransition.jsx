@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
 /**
@@ -8,15 +8,20 @@ import { useLocation } from 'react-router-dom';
  * the *current* location, so animating an exiting subtree would briefly show
  * the next page's content. Pass `transitionKey` to group routes that should
  * share a persistent layout (e.g. tournament tabs) and avoid re-animating.
+ *
+ * Uses a plain fade + rise (no blur filter, which is expensive to animate and
+ * hurts text legibility mid-transition) and collapses to an opacity-only fade
+ * when the user prefers reduced motion.
  */
 export default function PageTransition({ children, transitionKey }) {
   const { pathname } = useLocation();
+  const reduce = useReducedMotion();
   return (
     <motion.div
       key={transitionKey ?? pathname}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      transition={{ duration: reduce ? 0.15 : 0.26, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>

@@ -40,7 +40,7 @@ export default function MatchShareBar({ card, canSaveImage = false, className })
   };
 
   return (
-    <div className={`no-print flex items-center gap-2 ${className ?? ''}`}>
+    <div className={`no-print flex flex-wrap items-center justify-end gap-2 ${className ?? ''}`}>
       <Button variant="outline" size="sm" onClick={onShare}>
         <Share2 /> Share
       </Button>

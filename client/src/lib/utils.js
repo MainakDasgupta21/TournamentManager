@@ -27,3 +27,14 @@ export function initials(name = '') {
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
 }
+
+/**
+ * Platform-aware label for the command-palette shortcut. macOS users expect the
+ * Cmd glyph; everyone else (Windows/Linux) expects "Ctrl". The palette itself
+ * listens for both, so this only affects the on-screen hint.
+ */
+export function shortcutModifier() {
+  if (typeof navigator === 'undefined') return 'Ctrl';
+  const platform = navigator.userAgentData?.platform || navigator.platform || '';
+  return /mac|iphone|ipad|ipod/i.test(platform) ? '⌘' : 'Ctrl';
+}

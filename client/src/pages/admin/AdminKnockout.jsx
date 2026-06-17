@@ -16,6 +16,7 @@ import {
 import Bracket from '@/components/Bracket';
 import { ErrorState, Skeleton } from '@/components/ui/misc';
 import { useConfirm } from '@/components/ui/confirm';
+import { PageHeader } from '@/components/ui/page-header';
 
 function GenerateCard({ tournament, tournamentId, hasBracket, locked }) {
   const { generate } = useKnockoutMutations(tournamentId);
@@ -58,42 +59,46 @@ function GenerateCard({ tournament, tournamentId, hasBracket, locked }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Wand2 className="h-4 w-4" /> Generate knockout bracket</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1.5">
-          <Label>Format</Label>
-          <Select value={opts.format} onValueChange={(v) => setOpts({ ...opts, format: v })}>
-            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="single-elimination">Single elimination</SelectItem>
-              <SelectItem value="playoff">IPL-style playoffs (top 4)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {!isPlayoff && (
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5">
-            <Label>Qualifiers / group</Label>
-            <Input type="number" min={1} value={opts.qualifiersPerGroup} onChange={(e) => setOpts({ ...opts, qualifiersPerGroup: e.target.value })} className="w-32" />
+            <Label htmlFor="ko-format">Format</Label>
+            <Select value={opts.format} onValueChange={(v) => setOpts({ ...opts, format: v })}>
+              <SelectTrigger id="ko-format" className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="single-elimination">Single elimination</SelectItem>
+                <SelectItem value="playoff">IPL-style playoffs (top 4)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-        <div className="space-y-1.5">
-          <Label>First match date</Label>
-          <Input type="date" value={opts.startDate} onChange={(e) => setOpts({ ...opts, startDate: e.target.value })} className="w-44" />
+          {!isPlayoff && (
+            <div className="space-y-1.5">
+              <Label htmlFor="ko-qualifiers">Qualifiers / group</Label>
+              <Input id="ko-qualifiers" type="number" min={1} value={opts.qualifiersPerGroup} onChange={(e) => setOpts({ ...opts, qualifiersPerGroup: e.target.value })} className="w-full" />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="ko-start">First match date</Label>
+            <Input id="ko-start" type="date" value={opts.startDate} onChange={(e) => setOpts({ ...opts, startDate: e.target.value })} className="w-full" />
+          </div>
+          {!isPlayoff && (
+            <div className="flex h-10 items-center justify-between gap-2 rounded-xl border border-border/75 bg-card/55 px-3">
+              <span className="text-sm">3rd-place playoff</span>
+              <Switch checked={opts.thirdPlacePlayoff} onCheckedChange={(v) => setOpts({ ...opts, thirdPlacePlayoff: v })} />
+            </div>
+          )}
         </div>
-        {!isPlayoff && (
-          <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
-            <span className="text-sm">3rd-place playoff</span>
-            <Switch checked={opts.thirdPlacePlayoff} onCheckedChange={(v) => setOpts({ ...opts, thirdPlacePlayoff: v })} />
-          </div>
-        )}
-        <Button onClick={run} disabled={generate.isPending || locked} variant={hasBracket ? 'outline' : 'default'}>
-          <GitBranch /> {hasBracket ? 'Regenerate' : 'Generate bracket'}
-        </Button>
-        {isPlayoff && (
-          <p className="w-full text-xs text-muted-foreground">
-            Top 4 advance: Qualifier 1 (1 v 2) and Eliminator (3 v 4), then Qualifier 2, then the Final. The top two seeds get a second chance.
-          </p>
-        )}
-        {locked && <p className="text-xs text-muted-foreground">Bracket is locked — unlock not permitted.</p>}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button className="w-full sm:w-auto" onClick={run} disabled={generate.isPending || locked} variant={hasBracket ? 'outline' : 'default'}>
+            <GitBranch /> {hasBracket ? 'Regenerate' : 'Generate bracket'}
+          </Button>
+          {isPlayoff && (
+            <p className="text-xs text-muted-foreground sm:flex-1 sm:basis-64">
+              Top 4 advance: Qualifier 1 (1 v 2) and Eliminator (3 v 4), then Qualifier 2, then the Final. The top two seeds get a second chance.
+            </p>
+          )}
+          {locked && <p className="text-xs text-muted-foreground">Bracket is locked — unlock not permitted.</p>}
+        </div>
       </CardContent>
     </Card>
   );
@@ -121,14 +126,14 @@ function AdjustPanel({ tournamentId, bracket, teams }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {firstRound.matchups.map((m, i) => (
-          <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-lg border border-border/60 p-2">
+          <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-border/70 bg-card/55 p-2 sm:gap-3">
             <Select value={m.slotA?._id || m.slotA || ''} onValueChange={(v) => change(i, 'A', v)}>
-              <SelectTrigger className="h-9"><SelectValue placeholder={m.slotALabel || 'TBD'}>{teamName(m.slotA?._id || m.slotA)}</SelectValue></SelectTrigger>
+              <SelectTrigger className="h-9 min-w-0"><SelectValue placeholder={m.slotALabel || 'TBD'}>{teamName(m.slotA?._id || m.slotA)}</SelectValue></SelectTrigger>
               <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
             </Select>
-            <span className="text-xs font-bold text-muted-foreground">vs</span>
+            <span className="shrink-0 text-xs font-bold text-muted-foreground">vs</span>
             <Select value={m.slotB?._id || m.slotB || ''} onValueChange={(v) => change(i, 'B', v)}>
-              <SelectTrigger className="h-9"><SelectValue placeholder={m.slotBLabel || 'TBD'}>{teamName(m.slotB?._id || m.slotB)}</SelectValue></SelectTrigger>
+              <SelectTrigger className="h-9 min-w-0"><SelectValue placeholder={m.slotBLabel || 'TBD'}>{teamName(m.slotB?._id || m.slotB)}</SelectValue></SelectTrigger>
               <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -167,22 +172,25 @@ export default function AdminKnockout() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-3xl tracking-wide">Knockout stage</h2>
-        {hasBracket && (
-          <div className="flex items-center gap-2">
-            <Badge variant={locked ? 'success' : 'warning'}>{locked ? 'Locked' : 'Draft'}</Badge>
-            {!locked && <Button onClick={onLock} disabled={lock.isPending}><Lock /> Lock bracket</Button>}
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Knockout stage"
+        description="Generate, adjust, and lock the bracket with confidence once seeding looks right."
+        actions={
+          hasBracket ? (
+            <>
+              <Badge variant={locked ? 'success' : 'warning'}>{locked ? 'Locked' : 'Draft'}</Badge>
+              {!locked && <Button onClick={onLock} disabled={lock.isPending}><Lock /> Lock bracket</Button>}
+            </>
+          ) : null
+        }
+      />
 
       <GenerateCard tournament={tournament} tournamentId={tournamentId} hasBracket={hasBracket} locked={locked} />
 
       {isError ? (
         <ErrorState title="Couldn't load the bracket" description="There was a problem reaching the server." onRetry={refetch} />
       ) : isLoading ? (
-        <div className="flex gap-8 overflow-hidden">
+        <div className="surface-elevated flex gap-8 overflow-hidden rounded-2xl border border-border/70 p-5">
           {[4, 2, 1].map((count, col) => (
             <div key={col} className="flex flex-1 flex-col justify-around gap-4">
               {Array.from({ length: count }).map((_, i) => (

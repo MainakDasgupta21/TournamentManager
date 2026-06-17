@@ -129,7 +129,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
         </Select>
       </div>
 
-      <div className="rounded-lg border border-border p-3">
+      <div className="surface-elevated rounded-2xl border border-border/75 p-3">
         <p className="mb-2 text-sm font-semibold">{teamName(battingFirst)} (1st innings)</p>
         <div className="grid grid-cols-3 gap-2">
           <Num label="Runs" value={inn1.runs} onChange={(v) => setInn1({ ...inn1, runs: v })} />
@@ -138,7 +138,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
         </div>
       </div>
 
-      <div className="rounded-lg border border-border p-3">
+      <div className="surface-elevated rounded-2xl border border-border/75 p-3">
         <p className="mb-2 text-sm font-semibold">{teamName(secondBatting)} (2nd innings)</p>
         <div className="grid grid-cols-3 gap-2">
           <Num label="Runs" value={inn2.runs} onChange={(v) => setInn2({ ...inn2, runs: v })} />
@@ -178,7 +178,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
       </div>
 
       {tiedKnockout && (
-        <div className="rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.08)] p-3">
+        <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Super Over (knockout tie)</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid grid-cols-2 gap-2">
@@ -190,12 +190,12 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
               <Num label="Wkts" value={superOver.bWkts} onChange={(v) => setSuperOver({ ...superOver, bWkts: v })} />
             </div>
           </div>
-          {soTied && <p className="mt-2 text-xs text-destructive">Super Over is tied — enter a decisive score.</p>}
+          {soTied && <p role="alert" className="mt-2 text-xs text-destructive">Super Over is tied — enter a decisive score.</p>}
         </div>
       )}
 
       {bonusRule?.enabled && outcome !== 'tie' && outcome !== 'noResult' && (
-        <label className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
+        <label className="surface-elevated flex items-center justify-between rounded-2xl border border-border/75 p-3 text-sm">
           <span>Award bonus ({bonusRule.bonusPoints} pt) — {bonusRule.description || 'bonus'}</span>
           <Switch checked={awardBonus} onCheckedChange={setAwardBonus} />
         </label>
@@ -283,13 +283,13 @@ function FootballForm({ fixture, onSubmit, submitting, rosterByTeam, lineups, se
       </div>
 
       {isKnockout && drawn && (
-        <div className="rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.08)] p-3">
+        <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Penalty shootout (knockout tie)</p>
           <div className="grid grid-cols-2 gap-3">
             <Num label={`${teamA.name} pens`} value={penA} onChange={setPenA} />
             <Num label={`${teamB.name} pens`} value={penB} onChange={setPenB} />
           </div>
-          {penaltyTied && <p className="mt-2 text-xs text-destructive">Penalties are level — enter a decisive score.</p>}
+          {penaltyTied && <p role="alert" className="mt-2 text-xs text-destructive">Penalties are level — enter a decisive score.</p>}
         </div>
       )}
       {!isKnockout && drawn && <p className="text-sm text-muted-foreground">Equal score → recorded as a draw.</p>}
@@ -329,7 +329,7 @@ export default function ResultEntryDialog({ tournament, tournamentId, fixture, o
   const formProps = { rosterByTeam, lineups, setLineups };
 
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-w-2xl">
       <DialogHeader>
         <DialogTitle>Enter result</DialogTitle>
         <DialogDescription>

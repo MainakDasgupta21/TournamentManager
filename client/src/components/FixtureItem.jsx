@@ -74,7 +74,7 @@ export default function FixtureItem({ fixture, sport, live, onClick, className }
       onClick={onClick}
       aria-label={`${aName} versus ${bName} — ${action}`}
       className={cn(
-        'group w-full rounded-lg border border-border/60 bg-card/60 p-3 text-left transition-colors hover:border-primary/40 hover:bg-card',
+        'group surface-elevated surface-interactive w-full rounded-2xl border border-border/70 p-3 text-left transition-colors hover:border-primary/40 hover:bg-card/90',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className
       )}
