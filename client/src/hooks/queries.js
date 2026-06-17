@@ -58,6 +58,33 @@ export function useUpdateApproval() {
   });
 }
 
+/** Super-admin queue for tournament-level access requests. */
+export function useTournamentAccessRequests(filters, options) {
+  return useQuery({
+    queryKey: qk.tournamentAccessRequests(filters),
+    queryFn: () => get('/tournament-access-requests', filters),
+    placeholderData: keepPreviousData,
+    ...options,
+  });
+}
+
+export function useReviewTournamentAccessRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, note }) =>
+      api.patch(`/tournament-access-requests/${id}/review`, { status, note }).then((r) => r.data.data.request),
+    onSuccess: (_request, vars) => {
+      qc.invalidateQueries({ queryKey: ['tournamentAccessRequests'] });
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      if (vars?.tournamentId) {
+        qc.invalidateQueries({ queryKey: qk.tournament(vars.tournamentId) });
+        qc.invalidateQueries({ queryKey: qk.tournamentAdmins(vars.tournamentId) });
+        qc.invalidateQueries({ queryKey: qk.auditLogs(vars.tournamentId) });
+      }
+    },
+  });
+}
+
 /* ------------------------------ Tournaments ------------------------------ */
 
 export function useTournaments(filters) {
@@ -94,6 +121,24 @@ export function useCreateTournament() {
   return useMutation({
     mutationFn: (body) => api.post('/tournaments', body).then((r) => r.data.data.tournament),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tournaments'] }),
+  });
+}
+
+/** Request management access to a specific tournament. */
+export function useRequestTournamentAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tournamentId, message }) =>
+      api
+        .post(`/tournaments/${tournamentId}/access-requests`, message ? { message } : {})
+        .then((r) => r.data.data.request),
+    onSuccess: (_request, vars) => {
+      qc.invalidateQueries({ queryKey: ['tournaments'] });
+      qc.invalidateQueries({ queryKey: ['tournamentAccessRequests'] });
+      if (vars?.tournamentId) {
+        qc.invalidateQueries({ queryKey: qk.tournament(vars.tournamentId) });
+      }
+    },
   });
 }
 
@@ -136,7 +181,7 @@ export function useTournamentAdmins(id) {
   });
 }
 
-/** Typeahead search for organisers to add as collaborators (owner only). */
+/** Typeahead search for organisers to add as collaborators (super-admin-only). */
 export function useAdminCandidates(id, q, enabled = true) {
   return useQuery({
     enabled: !!id && enabled && (q?.trim().length ?? 0) >= 2,

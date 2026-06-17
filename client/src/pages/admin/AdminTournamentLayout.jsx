@@ -9,11 +9,15 @@ import {
   History,
   UserCog,
   ArrowLeft,
+  ShieldAlert,
+  Send,
 } from 'lucide-react';
-import { useTournament } from '@/hooks/queries';
+import { toast } from 'sonner';
+import { useTournament, useRequestTournamentAccess } from '@/hooks/queries';
 import { useLiveTournament } from '@/hooks/useLiveTournament';
 import { useTournamentNotifications } from '@/hooks/useTournamentNotifications';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { apiError } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TournamentStatusBadge } from '@/components/ui/status-badge';
@@ -37,6 +41,7 @@ const NAV = [
 export default function AdminTournamentLayout() {
   const { id } = useParams();
   const { data, isLoading, isError, refetch } = useTournament(id);
+  const requestAccess = useRequestTournamentAccess();
   // Keep admin views live too, so a result entered elsewhere refreshes here.
   useLiveTournament(id);
   useTournamentNotifications(id);
@@ -74,6 +79,79 @@ export default function AdminTournamentLayout() {
         description="This tournament may have been removed."
         action={<Button asChild><Link to="/admin">Back to dashboard</Link></Button>}
       />
+    );
+  }
+
+  const requestStatus = t.myAccessRequest?.status;
+  const onRequestAccess = async () => {
+    try {
+      await requestAccess.mutateAsync({ tournamentId: id });
+      toast.success('Access request submitted');
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
+  if (!t.canManage) {
+    return (
+      <div className="space-y-6">
+        <Button asChild variant="ghost" size="sm" className="mb-1">
+          <Link to="/admin"><ArrowLeft /> All tournaments</Link>
+        </Button>
+
+        <div className="surface-elevated flex flex-wrap items-center gap-3 rounded-2xl p-4 sm:p-5">
+          <h1 className="font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
+          <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
+          <TournamentStatusBadge status={t.status} />
+        </div>
+
+        <div className="surface-elevated max-w-3xl rounded-2xl p-6">
+          <h2 className="flex items-center gap-2 text-xl font-semibold">
+            <ShieldAlert className="h-5 w-5 text-primary" /> Access required
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You do not currently have management access to this tournament. Request access and a
+            super admin will review it.
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {requestStatus === 'pending' && <Badge variant="warning">Request pending</Badge>}
+            {requestStatus === 'approved' && <Badge variant="success">Approved</Badge>}
+            {requestStatus === 'rejected' && <Badge variant="live">Declined</Badge>}
+            {!requestStatus && <Badge variant="secondary">No request sent</Badge>}
+          </div>
+
+          <div className="mt-5">
+            <Button
+              onClick={onRequestAccess}
+              disabled={!t.canRequestAccess || requestAccess.isPending}
+            >
+              <Send />
+              {requestAccess.isPending
+                ? 'Submitting...'
+                : requestStatus === 'rejected'
+                  ? 'Request access again'
+                  : 'Request access'}
+            </Button>
+            {requestStatus === 'pending' && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                A super admin has to approve this request before you can manage this tournament.
+              </p>
+            )}
+            {requestStatus === 'approved' && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Access is approved. Refresh this page in a moment if your permissions have not
+                updated yet.
+              </p>
+            )}
+            {requestStatus === 'rejected' && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Your previous request was declined. You can submit a new request if needed.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 

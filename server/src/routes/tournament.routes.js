@@ -6,7 +6,6 @@ import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
 import {
   loadTournament,
   requireTournamentManager,
-  requireTournamentOwner,
 } from '../middleware/loadTournament.js';
 import {
   createTournament,
@@ -22,6 +21,7 @@ import {
   setPlayerOfTournament,
   deleteTournament,
 } from '../controllers/tournament.controller.js';
+import { requestTournamentAccess } from '../controllers/tournamentAccessRequest.controller.js';
 import { recalculateAll, getAuditLogs } from '../controllers/recalc.controller.js';
 import teamRoutes from './team.routes.js';
 import groupRoutes from './group.routes.js';
@@ -44,6 +44,15 @@ router.get('/', optionalAuth, validate(schemas.listTournamentsQuerySchema), list
 
 /* ---- Single tournament ---- */
 router.get('/:id', optionalAuth, loadTournament, getTournament);
+
+router.post(
+  '/:id/access-requests',
+  authenticate,
+  authorize(USER_ROLES.TOURNAMENT_ADMIN),
+  loadTournament,
+  validate(schemas.createTournamentAccessRequestSchema),
+  requestTournamentAccess
+);
 
 router.patch(
   '/:id',
@@ -99,7 +108,7 @@ router.get(
   getAuditLogs
 );
 
-/* ---- Collaborators (tournament owner / super admin) ---- */
+/* ---- Collaborators (super admin only for mutations) ---- */
 router.get(
   '/:id/admins',
   authenticate,
@@ -111,8 +120,8 @@ router.get(
 router.get(
   '/:id/admin-candidates',
   authenticate,
+  authorize(USER_ROLES.SUPER_ADMIN),
   loadTournament,
-  requireTournamentOwner,
   validate(schemas.adminCandidatesQuerySchema),
   searchAdminCandidates
 );
@@ -120,8 +129,8 @@ router.get(
 router.post(
   '/:id/admins',
   authenticate,
+  authorize(USER_ROLES.SUPER_ADMIN),
   loadTournament,
-  requireTournamentOwner,
   validate(schemas.assignAdminSchema),
   assignAdmin
 );
@@ -129,8 +138,8 @@ router.post(
 router.delete(
   '/:id/admins/:userId',
   authenticate,
+  authorize(USER_ROLES.SUPER_ADMIN),
   loadTournament,
-  requireTournamentOwner,
   removeAdmin
 );
 

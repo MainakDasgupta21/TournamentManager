@@ -5,6 +5,7 @@ import tournamentRoutes from './tournament.routes.js';
 import fixtureRoutes from './fixture.routes.js';
 import playerRoutes from './player.routes.js';
 import uploadRoutes from './upload.routes.js';
+import tournamentAccessRequestRoutes from './tournamentAccessRequest.routes.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/tournaments', tournamentRoutes);
 router.use('/fixtures', fixtureRoutes);
 router.use('/players', playerRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/tournament-access-requests', tournamentAccessRequestRoutes);
 
 export default router;

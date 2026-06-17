@@ -127,6 +127,39 @@ Review pending requests: ${reviewUrl}`;
   return sendMail({ to: recipients, subject, text, html });
 }
 
+/** Notify super admins about a tournament-level access request. */
+export function sendTournamentAccessRequestEmail({
+  to,
+  requester,
+  tournament,
+  message,
+  reviewUrl,
+}) {
+  const recipients = Array.isArray(to) ? to.filter(Boolean) : to;
+  if (!recipients || (Array.isArray(recipients) && !recipients.length)) {
+    return Promise.resolve(null);
+  }
+  const subject = `Tournament access request — ${requester.name} · ${tournament.name}`;
+  const noteText = message ? `\n\nMessage:\n${message}` : '';
+  const text = `${requester.name} requested tournament access.
+
+Tournament: ${tournament.name}
+Requester email: ${requester.email}${noteText}
+
+Review requests: ${reviewUrl}`;
+  const html = layout('New tournament access request', `
+    <p>An organiser requested access to a tournament.</p>
+    <ul style="padding-left:18px;color:#334155;font-size:14px;line-height:1.7">
+      <li><strong>Tournament:</strong> ${escapeHtml(tournament.name)}</li>
+      <li><strong>Name:</strong> ${escapeHtml(requester.name)}</li>
+      <li><strong>Email:</strong> ${escapeHtml(requester.email)}</li>
+      ${message ? `<li><strong>Message:</strong> ${escapeHtml(message)}</li>` : ''}
+    </ul>
+    <p style="margin:20px 0">${button(reviewUrl, 'Review requests')}</p>
+  `);
+  return sendMail({ to: recipients, subject, text, html });
+}
+
 /** Tell an organiser whether their access request was approved or declined. */
 export function sendApprovalDecisionEmail({ user, approved, note, loginUrl }) {
   const subject = approved
@@ -156,6 +189,40 @@ Thanks for your interest in TourneyOps. After review, your access request was no
     : layout('Access request update', `
         <p>Hi ${escapeHtml(user.name)},</p>
         <p>Thanks for your interest in TourneyOps. After review, your access request was not approved at this time.</p>
+        ${noteHtml}
+      `);
+  return sendMail({ to: user.email, subject, text, html });
+}
+
+/** Tell the requester whether tournament-level access was granted or rejected. */
+export function sendTournamentAccessDecisionEmail({ user, tournament, approved, note, adminUrl }) {
+  const subject = approved
+    ? `Access approved — ${tournament.name}`
+    : `Access request update — ${tournament.name}`;
+  const noteText = note ? `\n\nNote from the super admin: ${note}` : '';
+  const text = approved
+    ? `Hi ${user.name},
+
+Your request to manage "${tournament.name}" has been approved.
+
+Open tournament admin: ${adminUrl}${noteText}`
+    : `Hi ${user.name},
+
+Your request to manage "${tournament.name}" was not approved.${noteText}`;
+
+  const noteHtml = note
+    ? `<p style="font-size:13px;color:#475569"><strong>Note from the super admin:</strong> ${escapeHtml(note)}</p>`
+    : '';
+  const html = approved
+    ? layout('Tournament access approved', `
+        <p>Hi ${escapeHtml(user.name)},</p>
+        <p>Your request to manage <strong>${escapeHtml(tournament.name)}</strong> has been approved.</p>
+        <p style="margin:20px 0">${button(adminUrl, 'Open tournament admin')}</p>
+        ${noteHtml}
+      `)
+    : layout('Tournament access update', `
+        <p>Hi ${escapeHtml(user.name)},</p>
+        <p>Your request to manage <strong>${escapeHtml(tournament.name)}</strong> was not approved.</p>
         ${noteHtml}
       `);
   return sendMail({ to: user.email, subject, text, html });

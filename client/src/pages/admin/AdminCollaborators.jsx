@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Users, UserPlus, Crown, Trash2, Search, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -50,7 +50,7 @@ function PersonRow({ person, badge, action }) {
   );
 }
 
-/** Search + assign panel — owner / super admin only. */
+/** Search + assign panel — super-admin-only. */
 function AddCollaborator({ tournamentId, assign }) {
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -132,18 +132,14 @@ function AddCollaborator({ tournamentId, assign }) {
 }
 
 export default function AdminCollaborators() {
-  const { tournament, tournamentId } = useOutletContext();
+  const { tournamentId } = useOutletContext();
   const user = useAuth((s) => s.user);
   const confirm = useConfirm();
 
   const { data, isLoading, isError, refetch } = useTournamentAdmins(tournamentId);
   const { assign, remove } = useCollaboratorMutations(tournamentId);
 
-  const canManage = useMemo(() => {
-    if (!user) return false;
-    if (user.role === USER_ROLES.SUPER_ADMIN) return true;
-    return String(user._id) === String(tournament.createdBy);
-  }, [user, tournament.createdBy]);
+  const canManage = user?.role === USER_ROLES.SUPER_ADMIN;
 
   const owner = data?.owner ?? null;
   const admins = data?.admins ?? [];
@@ -166,7 +162,7 @@ export default function AdminCollaborators() {
       <div>
         <h2 className="font-display text-3xl tracking-wide">Collaborators</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          People who can manage this tournament alongside you.
+          People who can manage this tournament. Super admins control collaborator access.
         </p>
       </div>
 
@@ -251,7 +247,7 @@ export default function AdminCollaborators() {
             <AddCollaborator tournamentId={tournamentId} assign={assign} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Only the tournament owner or a super admin can add or remove collaborators.
+              Only super admins can add or remove collaborators.
             </p>
           )}
         </>

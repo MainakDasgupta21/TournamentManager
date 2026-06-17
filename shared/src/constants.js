@@ -30,6 +30,19 @@ export const APPROVAL_STATUS = Object.freeze({
 });
 export const APPROVAL_STATUS_VALUES = Object.values(APPROVAL_STATUS);
 
+/**
+ * Lifecycle of a tournament-specific access request submitted by an organiser.
+ * Super admins decide whether each request is approved or rejected.
+ */
+export const TOURNAMENT_ACCESS_REQUEST_STATUS = Object.freeze({
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+});
+export const TOURNAMENT_ACCESS_REQUEST_STATUS_VALUES = Object.values(
+  TOURNAMENT_ACCESS_REQUEST_STATUS
+);
+
 export const TOURNAMENT_STATUS = Object.freeze({
   SETUP: 'setup',
   GROUP_STAGE: 'groupStage',

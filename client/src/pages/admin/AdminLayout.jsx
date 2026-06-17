@@ -1,8 +1,8 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Trophy, LogOut, ExternalLink, ShieldCheck, Search, KeyRound } from 'lucide-react';
+import { Trophy, LogOut, ExternalLink, ShieldCheck, Search, KeyRound, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/auth';
-import { useUsers } from '@/hooks/queries';
+import { useUsers, useTournamentAccessRequests } from '@/hooks/queries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -22,7 +22,12 @@ export default function AdminLayout() {
     { status: 'pending' },
     { enabled: isSuperAdmin, refetchInterval: 60_000 }
   );
-  const pendingCount = pendingData?.pendingCount ?? 0;
+  const userPendingCount = pendingData?.pendingCount ?? 0;
+  const { data: pendingTournamentData } = useTournamentAccessRequests(
+    { status: 'pending' },
+    { enabled: isSuperAdmin, refetchInterval: 60_000 }
+  );
+  const tournamentPendingCount = pendingTournamentData?.pendingCount ?? 0;
 
   // Keep the chrome mounted across a tournament's admin sections.
   const sectionKey = pathname.startsWith('/admin/t/')
@@ -57,16 +62,28 @@ export default function AdminLayout() {
             </Tooltip>
             <ThemeToggle />
             {isSuperAdmin && (
-              <Button asChild variant="ghost" size="sm" className="relative">
-                <Link to="/admin/users">
-                  <ShieldCheck /> <span className="hidden sm:inline">Access requests</span>
-                  {pendingCount > 0 && (
-                    <Badge variant="warning" className="ml-0.5 px-1.5 py-0">
-                      {pendingCount}
-                    </Badge>
-                  )}
-                </Link>
-              </Button>
+              <>
+                <Button asChild variant="ghost" size="sm" className="relative">
+                  <Link to="/admin/users">
+                    <ShieldCheck /> <span className="hidden sm:inline">User requests</span>
+                    {userPendingCount > 0 && (
+                      <Badge variant="warning" className="ml-0.5 px-1.5 py-0">
+                        {userPendingCount}
+                      </Badge>
+                    )}
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm" className="relative">
+                  <Link to="/admin/tournament-access">
+                    <UserCog /> <span className="hidden sm:inline">Tournament access</span>
+                    {tournamentPendingCount > 0 && (
+                      <Badge variant="warning" className="ml-0.5 px-1.5 py-0">
+                        {tournamentPendingCount}
+                      </Badge>
+                    )}
+                  </Link>
+                </Button>
+              </>
             )}
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
               <Link to="/" target="_blank"><ExternalLink /> Public site</Link>

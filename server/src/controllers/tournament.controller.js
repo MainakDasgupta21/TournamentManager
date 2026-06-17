@@ -9,6 +9,7 @@ import { Standing } from '../models/Standing.js';
 import { Player } from '../models/Player.js';
 import { KnockoutBracket } from '../models/KnockoutBracket.js';
 import { AuditLog } from '../models/AuditLog.js';
+import { TournamentAccessRequest } from '../models/TournamentAccessRequest.js';
 import { User } from '../models/User.js';
 import { canManageTournament } from '../middleware/loadTournament.js';
 import { recalcAllStandings } from '../services/standingsService.js';
@@ -22,6 +23,7 @@ import {
   TIEBREAKERS,
   AUDIT_ENTITY,
   AUDIT_ACTION,
+  TOURNAMENT_ACCESS_REQUEST_STATUS,
 } from '@tms/shared/constants';
 
 /**
@@ -57,6 +59,19 @@ const STATE_TO_STATUSES = {
 /** Escape user text before embedding it in a (case-insensitive) RegExp. */
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** Public-safe projection of a tournament access request for the requester. */
+function toRequestSummary(request) {
+  if (!request) return null;
+  return {
+    _id: request._id,
+    status: request.status,
+    message: request.message ?? '',
+    reviewNote: request.reviewNote ?? '',
+    createdAt: request.createdAt,
+    reviewedAt: request.reviewedAt ?? null,
+  };
+}
+
 /**
  * Public list with light filtering, optional name search, sort and pagination.
  * Admins see a `canManage` flag so the client can show edit affordances without
@@ -90,10 +105,35 @@ export const listTournaments = asyncHandler(async (req, res) => {
     paginate ? Tournament.countDocuments(filter) : Promise.resolve(null),
   ]);
 
-  const tournaments = rows.map((t) => ({
-    ...t,
-    canManage: canManageTournament(req.user, t),
-  }));
+  let requestByTournamentId = new Map();
+  if (req.user?.role === USER_ROLES.TOURNAMENT_ADMIN && rows.length) {
+    const latestRequests = await TournamentAccessRequest.find({
+      requestedBy: req.user._id,
+      tournamentId: { $in: rows.map((t) => t._id) },
+    })
+      .sort({ createdAt: -1 })
+      .select('tournamentId status message reviewNote createdAt reviewedAt')
+      .lean();
+    requestByTournamentId = latestRequests.reduce((map, r) => {
+      const key = String(r.tournamentId);
+      if (!map.has(key)) map.set(key, toRequestSummary(r));
+      return map;
+    }, new Map());
+  }
+
+  const tournaments = rows.map((t) => {
+    const canManage = canManageTournament(req.user, t);
+    const myAccessRequest = requestByTournamentId.get(String(t._id)) ?? null;
+    return {
+      ...t,
+      canManage,
+      myAccessRequest,
+      canRequestAccess:
+        req.user?.role === USER_ROLES.TOURNAMENT_ADMIN &&
+        !canManage &&
+        myAccessRequest?.status !== TOURNAMENT_ACCESS_REQUEST_STATUS.PENDING,
+    };
+  });
 
   return sendSuccess(res, {
     data: {
@@ -108,6 +148,7 @@ export const listTournaments = asyncHandler(async (req, res) => {
 /** Public detail, enriched with counts so the hub can render at a glance. */
 export const getTournament = asyncHandler(async (req, res) => {
   const t = req.tournament;
+  const canManage = canManageTournament(req.user, t);
   const [teamCount, groupCount, fixtureCount, completedCount] = await Promise.all([
     Team.countDocuments({ tournamentId: t._id }),
     Group.countDocuments({ tournamentId: t._id }),
@@ -115,9 +156,29 @@ export const getTournament = asyncHandler(async (req, res) => {
     Fixture.countDocuments({ tournamentId: t._id, status: 'completed' }),
   ]);
 
+  let myAccessRequest = null;
+  if (req.user?.role === USER_ROLES.TOURNAMENT_ADMIN) {
+    const request = await TournamentAccessRequest.findOne({
+      tournamentId: t._id,
+      requestedBy: req.user._id,
+    })
+      .sort({ createdAt: -1 })
+      .select('status message reviewNote createdAt reviewedAt')
+      .lean();
+    myAccessRequest = toRequestSummary(request);
+  }
+
   return sendSuccess(res, {
     data: {
-      tournament: { ...t.toObject(), canManage: canManageTournament(req.user, t) },
+      tournament: {
+        ...t.toObject(),
+        canManage,
+        myAccessRequest,
+        canRequestAccess:
+          req.user?.role === USER_ROLES.TOURNAMENT_ADMIN &&
+          !canManage &&
+          myAccessRequest?.status !== TOURNAMENT_ACCESS_REQUEST_STATUS.PENDING,
+      },
       stats: { teamCount, groupCount, fixtureCount, completedCount },
     },
   });
@@ -206,7 +267,7 @@ export const listAdmins = asyncHandler(async (req, res) => {
 });
 
 /**
- * Search approved organisers to add as collaborators (owner only). Returns at
+ * Search approved organisers to add as collaborators (super-admin only). Returns at
  * most 10 minimal records, excluding the owner and current admins. Requires a
  * 2+ char query so we never dump the whole directory.
  */
@@ -239,7 +300,7 @@ export const searchAdminCandidates = asyncHandler(async (req, res) => {
   return sendSuccess(res, { data: { candidates } });
 });
 
-/** Assign an additional tournament admin (owner / super admin — enforced on route). */
+/** Assign an additional tournament admin (super-admin-only route). */
 export const assignAdmin = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
@@ -278,7 +339,7 @@ export const assignAdmin = asyncHandler(async (req, res) => {
   return sendSuccess(res, { message: 'Collaborator added', data: { tournament: req.tournament } });
 });
 
-/** Remove a collaborator admin (owner / super admin — enforced on route). */
+/** Remove a collaborator admin (super-admin-only route). */
 export const removeAdmin = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 

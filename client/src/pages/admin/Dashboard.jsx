@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Settings2, Trophy, Trash2, ArrowRight, Search } from 'lucide-react';
+import { Plus, Settings2, Trophy, Trash2, ArrowRight, Search, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTournamentList, useDeleteTournament } from '@/hooks/queries';
+import { useTournamentList, useDeleteTournament, useRequestTournamentAccess } from '@/hooks/queries';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiError } from '@/lib/api';
@@ -33,30 +33,49 @@ const SPORT_FILTERS = [
   { id: 'cricket', label: 'Cricket' },
   { id: 'football', label: 'Football' },
 ];
+const SCOPE_FILTERS = [
+  { id: 'mine', label: 'My access' },
+  { id: 'all', label: 'All tournaments' },
+];
+
+const REQUEST_BADGE = {
+  pending: { label: 'Request pending', variant: 'warning' },
+  approved: { label: 'Approved', variant: 'success' },
+  rejected: { label: 'Declined', variant: 'live' },
+};
 
 export default function Dashboard() {
   const del = useDeleteTournament();
+  const requestAccess = useRequestTournamentAccess();
   const confirm = useConfirm();
   useDocumentTitle('Dashboard');
 
   const [query, setQuery] = useState('');
+  const [scope, setScope] = useState('mine');
   const [status, setStatus] = useState('all');
   const [sport, setSport] = useState('all');
   const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
 
-  const hasFilters = debouncedQuery !== '' || status !== 'all' || sport !== 'all';
-  const clearFilters = () => { setQuery(''); setStatus('all'); setSport('all'); };
+  const hasFilters = debouncedQuery !== '' || status !== 'all' || sport !== 'all' || scope !== 'mine';
+  const clearFilters = () => {
+    setQuery('');
+    setScope('mine');
+    setStatus('all');
+    setSport('all');
+  };
 
   // Any filter/search/sort change resets to the first page.
-  useEffect(() => { setPage(1); }, [debouncedQuery, status, sport, sort]);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, scope, status, sport, sort]);
 
   const filters = {
-    mine: true,
     page,
     limit: PAGE_SIZE,
     sort,
+    ...(scope === 'mine' ? { mine: true } : {}),
     ...(status !== 'all' ? { state: status } : {}),
     ...(sport !== 'all' ? { sport } : {}),
     ...(debouncedQuery ? { q: debouncedQuery } : {}),
@@ -66,7 +85,7 @@ export default function Dashboard() {
   const visible = data?.tournaments ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
-  const showToolbar = !isLoading && !isError && (total > 0 || hasFilters);
+  const showToolbar = !isLoading && !isError;
 
   // Clamp the page if results shrank beneath us (e.g. after a delete).
   useEffect(() => {
@@ -88,11 +107,24 @@ export default function Dashboard() {
     }
   };
 
+  const onRequestAccess = async (t) => {
+    try {
+      await requestAccess.mutateAsync({ tournamentId: t._id });
+      toast.success(`Access request sent for "${t.name}"`);
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
   return (
     <div>
       <PageHeader
-        title="Your tournaments"
-        description="Create and manage cricket & football competitions"
+        title={scope === 'mine' ? 'Your tournaments' : 'All tournaments'}
+        description={
+          scope === 'mine'
+            ? 'Create and manage cricket & football competitions'
+            : 'Browse all tournaments and request management access where needed'
+        }
         className="mb-8"
         actions={
           <Button asChild size="lg">
@@ -134,6 +166,12 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {SCOPE_FILTERS.map((f) => (
+              <FilterChip key={f.id} active={scope === f.id} onClick={() => setScope(f.id)}>
+                {f.label}
+              </FilterChip>
+            ))}
+            <span className="mx-1 h-5 w-px bg-border" aria-hidden />
             {STATUS_FILTERS.map((f) => (
               <FilterChip key={f.id} active={status === f.id} onClick={() => setStatus(f.id)}>
                 {f.label}
@@ -160,9 +198,17 @@ export default function Dashboard() {
       ) : total === 0 && !hasFilters ? (
         <EmptyState
           icon={Trophy}
-          title="No tournaments yet"
-          description="Spin up your first tournament — pick a sport, add teams, and let the engine handle fixtures, standings and brackets."
-          action={<Button asChild><Link to="/admin/new"><Plus /> Create tournament</Link></Button>}
+          title={scope === 'mine' ? 'No tournaments yet' : 'No tournaments available'}
+          description={
+            scope === 'mine'
+              ? 'Spin up your first tournament — pick a sport, add teams, and let the engine handle fixtures, standings and brackets.'
+              : 'No tournaments have been created yet. Check back later or create one now.'
+          }
+          action={
+            <Button asChild>
+              <Link to="/admin/new"><Plus /> Create tournament</Link>
+            </Button>
+          }
         />
       ) : total === 0 ? (
         <EmptyState
@@ -181,29 +227,76 @@ export default function Dashboard() {
                     <div className="mb-2 flex items-center gap-2">
                       <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
                       <TournamentStatusBadge status={t.status} />
+                      {!t.canManage && t.myAccessRequest && (
+                        <Badge
+                          variant={REQUEST_BADGE[t.myAccessRequest.status]?.variant ?? 'secondary'}
+                        >
+                          {REQUEST_BADGE[t.myAccessRequest.status]?.label ?? 'Request sent'}
+                        </Badge>
+                      )}
                     </div>
                     <h3 className="font-display text-2xl tracking-wide">{t.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(t.startDate)} – {formatDate(t.endDate)}
                     </p>
-                    <div className="mt-auto flex items-center pt-4 text-sm font-medium text-primary">
-                      <Settings2 className="mr-1.5 h-4 w-4" /> Manage
-                      <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                    </div>
+                    {t.canManage ? (
+                      <div className="mt-auto flex items-center pt-4 text-sm font-medium text-primary">
+                        <Settings2 className="mr-1.5 h-4 w-4" /> Manage
+                        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    ) : (
+                      <div className="mt-auto flex items-center pt-4 text-sm text-muted-foreground">
+                        <Send className="mr-1.5 h-4 w-4" />
+                        Request access to manage
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </Link>
-              <Tooltip label="Delete tournament">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-3 top-3 transition-opacity focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(t); }}
-                  aria-label="Delete tournament"
+              {t.canManage ? (
+                <Tooltip label="Delete tournament">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-3 top-3 transition-opacity focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(t);
+                    }}
+                    aria-label="Delete tournament"
+                  >
+                    <Trash2 className="text-destructive" />
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Tooltip
+                  label={
+                    t.myAccessRequest?.status === 'pending'
+                      ? 'Request pending'
+                      : t.myAccessRequest?.status === 'approved'
+                        ? 'Access already approved'
+                        : t.myAccessRequest?.status === 'rejected'
+                          ? 'Request access again'
+                          : 'Request access'
+                  }
                 >
-                  <Trash2 className="text-destructive" />
-                </Button>
-              </Tooltip>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-3 top-3 transition-opacity focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onRequestAccess(t);
+                    }}
+                    disabled={!t.canRequestAccess || requestAccess.isPending}
+                    aria-label="Request tournament access"
+                  >
+                    <Send />
+                  </Button>
+                </Tooltip>
+              )}
             </motion.div>
           ))}
         </motion.div>

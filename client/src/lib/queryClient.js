@@ -18,6 +18,7 @@ export const qk = {
   tournament: (id) => ['tournament', id],
   tournamentAdmins: (id) => ['tournamentAdmins', id],
   adminCandidates: (id, q) => ['adminCandidates', id, q ?? ''],
+  tournamentAccessRequests: (filters) => ['tournamentAccessRequests', filters ?? {}],
   teams: (id) => ['teams', id],
   team: (id, teamId) => ['team', id, teamId],
   groups: (id) => ['groups', id],

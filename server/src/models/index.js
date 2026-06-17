@@ -7,3 +7,4 @@ export { Fixture } from './Fixture.js';
 export { Standing } from './Standing.js';
 export { KnockoutBracket } from './KnockoutBracket.js';
 export { AuditLog } from './AuditLog.js';
+export { TournamentAccessRequest } from './TournamentAccessRequest.js';
