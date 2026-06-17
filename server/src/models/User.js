@@ -5,6 +5,7 @@ import {
   USER_ROLES,
   APPROVAL_STATUS,
   APPROVAL_STATUS_VALUES,
+  THEME_VALUES,
 } from '@tms/shared/constants';
 
 const userSchema = new mongoose.Schema(
@@ -38,6 +39,11 @@ const userSchema = new mongoose.Schema(
     approvedAt: { type: Date },
     reviewNote: { type: String, trim: true, maxlength: 500 },
     isActive: { type: Boolean, default: true },
+    // Per-user UI preferences. The single source of truth for the theme of a
+    // signed-in user (the client no longer persists this locally).
+    preferences: {
+      theme: { type: String, enum: THEME_VALUES, default: 'dark' },
+    },
     // Bumped on logout-all / password change to invalidate outstanding
     // refresh tokens (the version is encoded into the refresh token).
     tokenVersion: { type: Number, default: 0 },

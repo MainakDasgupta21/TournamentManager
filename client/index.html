@@ -42,20 +42,9 @@
     />
     <title>TourneyOps — Tournament Management</title>
 
-    <!-- Apply the saved theme before first paint to avoid a flash. Defaults to
-         dark (the brand look) when no preference is stored. -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem('tms-theme');
-          var dark = t ? t === 'dark' : true;
-          document.documentElement.classList.toggle('dark', dark);
-          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-        } catch (e) {
-          document.documentElement.classList.add('dark');
-        }
-      })();
-    </script>
+    <!-- The app starts on the default dark theme (class set above). For a
+         signed-in user the saved theme is loaded from the server on bootstrap;
+         nothing theme-related is persisted on the client. -->
   </head>
   <body>
     <div id="root"></div>

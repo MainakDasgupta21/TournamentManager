@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
-const KEY = 'tms-theme';
 const DARK_BG = '#0a0e1a';
 const LIGHT_BG = '#f5f7fb';
+const DEFAULT_THEME = 'dark';
 
 /** Reflect the chosen theme onto <html> (class + color-scheme + theme-color). */
 function apply(theme) {
@@ -15,30 +15,30 @@ function apply(theme) {
   if (meta) meta.setAttribute('content', dark ? DARK_BG : LIGHT_BG);
 }
 
-function initial() {
-  try {
-    const t = localStorage.getItem(KEY);
-    if (t === 'dark' || t === 'light') return t;
-  } catch {
-    /* ignore */
-  }
-  return 'dark';
-}
-
-/** Persisted light/dark theme. The pre-paint script in index.html sets the
- * initial class; this store keeps React state + the DOM in sync on toggle. */
-export const useTheme = create((set, get) => ({
-  theme: initial(),
+/**
+ * Light/dark theme state. Nothing is persisted on the client: for a signed-in
+ * user the database is the source of truth (applied from the session on login),
+ * and anonymous visitors simply get the default theme each visit. This store
+ * only mirrors the current choice into React state + the DOM.
+ */
+export const useTheme = create((set) => ({
+  theme: DEFAULT_THEME,
 
   setTheme: (theme) => {
-    try {
-      localStorage.setItem(KEY, theme);
-    } catch {
-      /* ignore */
-    }
-    apply(theme);
-    set({ theme });
+    const next = theme === 'light' ? 'light' : 'dark';
+    apply(next);
+    set({ theme: next });
   },
 
-  toggle: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
+  toggle: () => set((state) => {
+    const next = state.theme === 'dark' ? 'light' : 'dark';
+    apply(next);
+    return { theme: next };
+  }),
+
+  /** Reset to the default (used on logout, so the next visitor starts clean). */
+  reset: () => {
+    apply(DEFAULT_THEME);
+    set({ theme: DEFAULT_THEME });
+  },
 }));

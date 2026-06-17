@@ -12,6 +12,7 @@ import {
   logout,
   logoutAll,
   me,
+  updatePreferences,
   changePassword,
   forgotPassword,
   resetPassword,
@@ -46,6 +47,14 @@ router.post('/reset-password', validate(schemas.resetPasswordSchema), resetPassw
 router.post('/logout', authenticate, logout);
 router.post('/logout-all', authenticate, logoutAll);
 router.get('/me', authenticate, me);
+
+// Authenticated UI preferences (theme) — persisted server-side as the source of truth.
+router.patch(
+  '/preferences',
+  authenticate,
+  validate(schemas.updatePreferencesSchema),
+  updatePreferences
+);
 
 // Authenticated self-service password change (verifies the current password).
 router.post(

@@ -185,6 +185,18 @@ export const me = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Update the signed-in user's UI preferences (currently just the theme). The
+ * database is the single source of truth — the client persists nothing locally.
+ */
+export const updatePreferences = asyncHandler(async (req, res) => {
+  const { theme } = req.body;
+  const user = req.user;
+  user.preferences = { ...user.preferences?.toObject?.() ?? user.preferences, theme };
+  await user.save();
+  return sendSuccess(res, { message: 'Preferences updated', data: { user } });
+});
+
+/**
  * Authenticated self-service password change. `authenticate` loads req.user
  * without the (select:false) passwordHash, so we re-load with it to verify the
  * current password. On success we bump tokenVersion — invalidating refresh

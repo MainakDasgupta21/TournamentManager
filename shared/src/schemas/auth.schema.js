@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { USER_ROLE_VALUES, USER_ROLES } from '../constants.js';
+import { USER_ROLE_VALUES, USER_ROLES, THEME_VALUES } from '../constants.js';
 import { nonEmptyString } from './common.js';
 
 export const loginSchema = z.object({
@@ -84,4 +84,11 @@ export const changePasswordSchema = z.object({
       message: 'New password must be different from your current password',
       path: ['newPassword'],
     }),
+});
+
+/** Authenticated update of the signed-in user's UI preferences (e.g. theme). */
+export const updatePreferencesSchema = z.object({
+  body: z.object({
+    theme: z.enum(THEME_VALUES),
+  }),
 });

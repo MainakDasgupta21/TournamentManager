@@ -69,6 +69,9 @@ export const FOOTBALL_POSITIONS = Object.freeze(['GK', 'DEF', 'MID', 'FWD']);
  */
 export const PLAYER_CATEGORIES = Object.freeze(['S++', 'S', 'A', 'B', 'C', 'D']);
 
+/** UI theme preference. Persisted per-user in the database (not on the client). */
+export const THEME_VALUES = Object.freeze(['dark', 'light']);
+
 /**
  * Tiebreakers available per sport. The admin orders a subset of these in
  * `pointsConfig.tiebreakerOrder`; the standings engine applies them in order.

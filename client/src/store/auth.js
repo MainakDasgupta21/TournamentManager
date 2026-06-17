@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api, setAccessToken, setOnUnauthorized } from '@/lib/api';
+import { useTheme } from '@/store/theme';
 
 // Shared across all bootstrap callers so React StrictMode's double-mount (or any
 // concurrent boot) runs at most one refresh and can't overwrite a good session
@@ -18,6 +19,8 @@ export const useAuth = create((set, get) => ({
 
   setSession: ({ user, accessToken }) => {
     setAccessToken(accessToken);
+    // The server is the source of truth for the user's theme; apply it now.
+    useTheme.getState().setTheme(user?.preferences?.theme ?? 'dark');
     set({ user, accessToken, status: 'authenticated' });
   },
 
@@ -43,6 +46,7 @@ export const useAuth = create((set, get) => ({
       /* ignore network errors on logout */
     }
     setAccessToken(null);
+    useTheme.getState().reset();
     set({ user: null, accessToken: null, status: 'unauthenticated' });
   },
 
@@ -98,5 +102,6 @@ export const useAuth = create((set, get) => ({
 // When a refresh ultimately fails, clear the session.
 setOnUnauthorized(() => {
   setAccessToken(null);
+  useTheme.getState().reset();
   useAuth.setState({ user: null, accessToken: null, status: 'unauthenticated' });
 });

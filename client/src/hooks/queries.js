@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
+import { useAuth } from '@/store/auth';
 
 const get = (url, params) => api.get(url, { params }).then((r) => r.data.data);
 
@@ -16,6 +17,22 @@ export function useUploadImage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data.data.url;
+    },
+  });
+}
+
+/* ------------------------------ Preferences ------------------------------ */
+
+/**
+ * Persist the signed-in user's theme to the database (the source of truth).
+ * The UI applies the new theme optimistically; this syncs it server-side and
+ * refreshes the cached session user.
+ */
+export function useUpdateThemePreference() {
+  return useMutation({
+    mutationFn: (theme) => api.patch('/auth/preferences', { theme }).then((r) => r.data.data.user),
+    onSuccess: (user) => {
+      if (user) useAuth.setState({ user });
     },
   });
 }
