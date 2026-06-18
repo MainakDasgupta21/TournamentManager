@@ -36,8 +36,8 @@ function RequestCard({ user, onApprove, onReject, busy }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="h-full">
-        <CardContent className="flex h-full flex-col gap-4 p-5">
-          <div className="flex items-start gap-3">
+        <CardContent className="flex h-full flex-col gap-5 p-6">
+          <div className="flex flex-wrap items-start gap-3">
             <TeamCrest team={{ name: user.name, primaryColor: '#6366f1' }} />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-base font-semibold">{user.name}</h2>
@@ -45,10 +45,10 @@ function RequestCard({ user, onApprove, onReject, busy }) {
                 <Mail className="h-3.5 w-3.5 shrink-0" /> {user.email}
               </p>
             </div>
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <Badge variant={status.variant} className="ml-auto shrink-0">{status.label}</Badge>
           </div>
 
-          <div className="space-y-1 text-sm text-muted-foreground">
+          <div className="space-y-1.5 rounded-xl border border-border/65 bg-card/45 px-3 py-2.5 text-sm text-muted-foreground">
             {user.organization && (
               <p className="flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5 shrink-0" /> {user.organization}
@@ -60,10 +60,10 @@ function RequestCard({ user, onApprove, onReject, busy }) {
           </div>
 
           {pending ? (
-            <div className="mt-auto flex flex-col gap-2 pt-1 sm:flex-row">
+            <div className="mt-auto grid gap-2 pt-1 sm:grid-cols-2">
               <Button
                 size="sm"
-                className="flex-1"
+                className="w-full"
                 disabled={busy}
                 aria-label={`Approve ${user.name}`}
                 onClick={() => onApprove(user)}
@@ -73,7 +73,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1"
+                className="w-full"
                 disabled={busy}
                 aria-label={`Decline ${user.name}`}
                 onClick={() => onReject(user)}
@@ -86,7 +86,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
               {user.approvalStatus === 'approved' ? (
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
                   className="w-full sm:w-auto"
                   disabled={busy}
                   aria-label={`Revoke access for ${user.name}`}

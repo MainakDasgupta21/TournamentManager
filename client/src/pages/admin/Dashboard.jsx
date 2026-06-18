@@ -187,7 +187,7 @@ export default function Dashboard() {
             const Icon = item.icon;
             return (
               <Card key={item.key} className="surface-interactive border border-border/75">
-                <CardContent className="flex h-full flex-col justify-between gap-4 p-4 sm:p-5">
+                <CardContent className="flex h-full flex-col justify-between gap-5 p-5 sm:p-6">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">{item.title}</p>
@@ -306,7 +306,7 @@ export default function Dashboard() {
             <motion.div key={t._id} variants={staggerItem} className="group relative">
               <Link to={`/admin/t/${t._id}`} className="block h-full">
                 <Card className="h-full transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5">
-                  <CardContent className="flex h-full flex-col p-5">
+                  <CardContent className="flex h-full flex-col p-6">
                     <div className="mb-2 flex items-center gap-2">
                       <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
                       <TournamentStatusBadge status={t.status} />

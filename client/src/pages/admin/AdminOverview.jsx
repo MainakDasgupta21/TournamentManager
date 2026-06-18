@@ -24,14 +24,14 @@ function PlayerOfTournamentCard({ tournament, tournamentId }) {
         <Crown className="h-4 w-4 text-amber-400" />
         <CardTitle>Player of the Tournament</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         {players.length ? (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               value={currentId || POTM_NONE}
               onValueChange={(v) => setPotm.mutate(v === POTM_NONE ? null : v)}
             >
-              <SelectTrigger className="max-w-sm">
+              <SelectTrigger className="w-full sm:max-w-sm">
                 <SelectValue placeholder="Select a player" />
               </SelectTrigger>
               <SelectContent>
@@ -108,19 +108,19 @@ export default function AdminOverview() {
         description="Track progress, review upcoming fixtures, and assign Player of the Tournament."
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card><CardContent className="flex items-center gap-3 p-5">
+        <Card><CardContent className="flex items-center gap-3 p-6">
           <CheckCircle2 className="h-8 w-8 text-[hsl(var(--success))]" />
           <div><p className="font-display text-3xl">{completed}</p><p className="text-xs text-muted-foreground">Completed</p></div>
         </CardContent></Card>
-        <Card><CardContent className="flex items-center gap-3 p-5">
+        <Card><CardContent className="flex items-center gap-3 p-6">
           <Clock className="h-8 w-8 text-[hsl(var(--warning))]" />
           <div><p className="font-display text-3xl">{fixtures.length - completed}</p><p className="text-xs text-muted-foreground">Remaining</p></div>
         </CardContent></Card>
-        <Card><CardContent className="p-5"><Progress value={completed} total={fixtures.length} /></CardContent></Card>
+        <Card><CardContent className="p-6"><Progress value={completed} total={fixtures.length} /></CardContent></Card>
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle>Pending fixtures</CardTitle>
           <Link to={`/admin/t/${tournamentId}/fixtures`} className="flex items-center text-sm text-primary hover:underline">
             Manage all <ArrowRight className="ml-1 h-3 w-3" />

@@ -126,7 +126,7 @@ function AdjustPanel({ tournamentId, bracket, teams }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {firstRound.matchups.map((m, i) => (
-          <div key={i} className="grid grid-cols-1 items-center gap-2 rounded-xl border border-border/70 bg-card/55 p-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-3">
+          <div key={i} className="grid grid-cols-1 items-center gap-2 rounded-xl border border-border/70 bg-card/55 p-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-3">
             <Select value={m.slotA?._id || m.slotA || ''} onValueChange={(v) => change(i, 'A', v)}>
               <SelectTrigger className="h-9 min-w-0"><SelectValue placeholder={m.slotALabel || 'TBD'}>{teamName(m.slotA?._id || m.slotA)}</SelectValue></SelectTrigger>
               <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
@@ -190,7 +190,7 @@ export default function AdminKnockout() {
       {isError ? (
         <ErrorState title="Couldn't load the bracket" description="There was a problem reaching the server." onRetry={refetch} />
       ) : isLoading ? (
-        <div className="surface-elevated flex gap-8 overflow-hidden rounded-2xl border border-border/70 p-5">
+        <div className="surface-elevated flex gap-8 overflow-hidden rounded-2xl border border-border/70 p-6">
           {[4, 2, 1].map((count, col) => (
             <div key={col} className="flex flex-1 flex-col justify-around gap-4">
               {Array.from({ length: count }).map((_, i) => (
@@ -203,7 +203,7 @@ export default function AdminKnockout() {
         <>
           {hasBracket && !locked && <AdjustPanel tournamentId={tournamentId} bracket={bracket} teams={teams} />}
           <Card>
-            <CardContent className="p-5">
+            <CardContent className="p-6">
               <Bracket bracket={bracket} />
             </CardContent>
           </Card>

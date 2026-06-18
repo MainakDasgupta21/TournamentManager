@@ -36,7 +36,7 @@ function Avatar({ name }) {
 
 function PersonRow({ person, badge, action }) {
   return (
-    <li className="flex items-start gap-3 py-3 sm:items-center">
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
       <Avatar name={person.name} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -47,7 +47,7 @@ function PersonRow({ person, badge, action }) {
           <Mail className="h-3 w-3 shrink-0" /> {person.email}
         </p>
       </div>
-      {action}
+      {action ? <div className="sm:ml-2 sm:shrink-0">{action}</div> : null}
     </li>
   );
 }
@@ -107,7 +107,7 @@ function AddCollaborator({ tournamentId, assign }) {
                 <Loader2 className="h-4 w-4 animate-spin" /> Searching…
               </div>
             ) : candidates.length ? (
-              <ul className="divide-y divide-border/60 px-3">
+              <ul className="divide-y divide-border/60 px-4">
                 {candidates.map((c) => (
                   <PersonRow
                     key={c._id}

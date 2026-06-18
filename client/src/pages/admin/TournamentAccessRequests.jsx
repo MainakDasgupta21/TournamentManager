@@ -39,8 +39,8 @@ function RequestCard({ request, onApprove, onReject, busy }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="h-full">
-        <CardContent className="flex h-full flex-col gap-4 p-5">
-          <div className="flex items-start gap-3">
+        <CardContent className="flex h-full flex-col gap-5 p-6">
+          <div className="flex flex-wrap items-start gap-3">
             <TeamCrest team={{ name: requester.name ?? 'Requester', primaryColor: '#6366f1' }} />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-base font-semibold">{requester.name ?? 'Unknown requester'}</h2>
@@ -48,10 +48,10 @@ function RequestCard({ request, onApprove, onReject, busy }) {
                 <Mail className="h-3.5 w-3.5 shrink-0" /> {requester.email ?? 'No email'}
               </p>
             </div>
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <Badge variant={status.variant} className="ml-auto shrink-0">{status.label}</Badge>
           </div>
 
-          <div className="space-y-1 text-sm text-muted-foreground">
+          <div className="space-y-1.5 rounded-xl border border-border/65 bg-card/45 px-3 py-2.5 text-sm text-muted-foreground">
             <p className="flex items-center gap-1.5">
               <Trophy className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{tournament.name ?? 'Tournament removed'}</span>
@@ -74,7 +74,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
 
           <div className="mt-auto">
             {tournament._id ? (
-              <Button asChild size="sm" variant="ghost" className="w-full justify-start px-0 text-primary sm:w-auto">
+              <Button asChild size="sm" variant="outline" className="w-full justify-start sm:w-auto">
                 <Link to={`/admin/t/${tournament._id}`}>Open tournament</Link>
               </Button>
             ) : (
@@ -83,10 +83,10 @@ function RequestCard({ request, onApprove, onReject, busy }) {
           </div>
 
           {pending && (
-            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+            <div className="grid gap-2 pt-1 sm:grid-cols-2">
               <Button
                 size="sm"
-                className="flex-1"
+                className="w-full"
                 disabled={busy}
                 aria-label={`Approve ${requester.name ?? 'requester'}`}
                 onClick={() => onApprove(request)}
@@ -96,7 +96,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1"
+                className="w-full"
                 disabled={busy}
                 aria-label={`Decline ${requester.name ?? 'requester'}`}
                 onClick={() => onReject(request)}

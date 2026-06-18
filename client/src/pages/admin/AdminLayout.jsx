@@ -75,7 +75,7 @@ export default function AdminLayout() {
       </a>
       <div className="pointer-events-none fixed inset-x-0 top-[-16rem] z-0 h-[30rem] bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.22),transparent_62%)]" />
       <header className="sticky top-0 z-40 border-b border-border/65 bg-background/78 backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="page-shell flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/admin" className="flex min-w-0 items-center gap-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-br from-primary via-primary/90 to-accent shadow-[var(--shadow-soft)]">
               <Trophy className="h-5 w-5 text-white" />
@@ -119,7 +119,7 @@ export default function AdminLayout() {
         {isSuperAdmin && (
           <div className="border-t border-border/60">
             <nav
-              className="mx-auto flex h-12 max-w-7xl items-center gap-2 overflow-x-auto px-4 scrollbar-thin sm:px-6"
+              className="page-shell flex h-12 items-center gap-2 overflow-x-auto px-4 scrollbar-thin sm:px-6 lg:px-8"
               aria-label="Super admin navigation"
             >
               <SuperAdminNavLink to="/admin" end icon={LayoutDashboard} label="Overview" />
@@ -134,7 +134,7 @@ export default function AdminLayout() {
           </div>
         )}
       </header>
-      <main id="admin-main-content" className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main id="admin-main-content" className="page-shell relative z-10 px-4 py-8 sm:px-6 lg:px-8">
         <PageTransition transitionKey={sectionKey}>
           <Outlet />
         </PageTransition>

@@ -90,7 +90,7 @@ function RecalculateButton({ tournamentId }) {
 
 function Json({ value }) {
   return (
-    <pre className="max-h-64 overflow-auto rounded-md bg-background/60 p-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin">
+    <pre className="max-h-64 overflow-auto rounded-md bg-background/60 p-3 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin">
       {value == null ? '—' : JSON.stringify(value, null, 2)}
     </pre>
   );
@@ -104,7 +104,7 @@ function AuditRow({ log }) {
 
   return (
     <Card>
-      <CardContent className="p-4">
+      <CardContent className="p-5">
         <button
           type="button"
           onClick={() => hasDiff && setOpen((o) => !o)}
@@ -164,7 +164,7 @@ export default function AdminAuditLog() {
         actions={<RecalculateButton tournamentId={tournamentId} />}
       />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="surface-elevated flex flex-wrap items-center gap-3 rounded-2xl p-3 sm:p-4">
         <Select
           value={entityType}
           onValueChange={(v) => { setEntityType(v); setPage(1); }}

@@ -67,14 +67,18 @@ export default function AccountSettings() {
       <PageHeader title="Account" description="Manage your sign-in details" className="mb-8" />
 
       <Card className="mb-6">
-        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 p-5 text-sm">
-          <span className="font-medium">{user?.name}</span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Mail className="h-3.5 w-3.5" /> {user?.email}
-          </span>
-          <Badge variant="secondary" className="ml-auto">
-            {user?.role === 'superadmin' ? 'Super Admin' : 'Tournament Admin'}
-          </Badge>
+        <CardContent className="p-5 text-sm sm:p-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-border/65 bg-card/45 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-medium">{user?.name}</p>
+              <p className="flex items-center gap-1.5 break-all text-muted-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0" /> {user?.email}
+              </p>
+            </div>
+            <Badge variant="secondary" className="self-start sm:self-auto">
+              {user?.role === 'superadmin' ? 'Super Admin' : 'Tournament Admin'}
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
@@ -85,8 +89,8 @@ export default function AccountSettings() {
               <ShieldCheck className="h-4 w-4" /> Fixed super admin password
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="rounded-md bg-secondary/50 p-3 text-sm text-muted-foreground">
+          <CardContent className="pt-0">
+            <p className="rounded-xl border border-border/65 bg-secondary/45 p-4 text-sm leading-relaxed text-muted-foreground">
               Super admin passwords are managed by your platform owner for security. If you need a
               credential rotation, contact the maintainer and sign in again after they confirm the
               update.

@@ -450,13 +450,13 @@ export default function AdminTeams() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
             <Card key={team._id}>
-              <CardContent className="flex flex-wrap items-center gap-3 p-4">
+              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
                 <TeamCrest team={team} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{team.name}</p>
                   <p className="text-xs text-muted-foreground">{team.shortCode}{team.seed ? ` · seed ${team.seed}` : ''}</p>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="secondary" size="sm"><Shirt /> Roster</Button>

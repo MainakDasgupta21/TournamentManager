@@ -103,7 +103,7 @@ export default function AdminGroups() {
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4" /> Seeded snake draft</CardTitle></CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-4">
+        <CardContent className="flex flex-wrap items-end gap-4 sm:gap-5">
           <div className="space-y-1.5">
             <Label htmlFor="num-groups">Number of groups</Label>
             <Input id="num-groups" type="number" min={1} value={numGroups} onChange={(e) => setNumGroups(e.target.value)} className="w-32" />
@@ -111,14 +111,16 @@ export default function AdminGroups() {
           <Button onClick={runAutoDistribute} disabled={autoDistribute.isPending}>
             <Shuffle /> Auto-distribute {teams.length} teams
           </Button>
-          <p className="text-xs text-muted-foreground">Distributes teams by seed order (1→A, 2→B, … then snake back). Replaces existing groups.</p>
+          <p className="w-full text-xs text-muted-foreground">
+            Distributes teams by seed order (1→A, 2→B, … then snake back). Replaces existing groups.
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader><CardTitle>Create a group manually</CardTitle></CardHeader>
-        <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Group A" className="w-full max-w-xs" />
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Group A" className="w-full max-w-sm" />
           <Button onClick={addGroup} disabled={create.isPending}><Plus /> Add group</Button>
         </CardContent>
       </Card>
@@ -135,7 +137,7 @@ export default function AdminGroups() {
         <div className="grid gap-4 md:grid-cols-2">
           {groups.map((group) => (
             <Card key={group._id}>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <CardTitle className="font-display text-2xl tracking-wide">{group.name}</CardTitle>
                 <Tooltip label="Delete group">
                   <Button variant="ghost" size="icon" onClick={() => onRemoveGroup(group)} aria-label="Delete group">
@@ -143,10 +145,10 @@ export default function AdminGroups() {
                   </Button>
                 </Tooltip>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <ul className="space-y-1.5">
                   {group.teams.length ? group.teams.map((t) => (
-                    <li key={t._id} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/55 px-2.5 py-1.5">
+                    <li key={t._id} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/55 px-3 py-2">
                       <TeamCrest team={t} size="sm" />
                       <span className="flex-1 text-sm font-medium">{t.name}</span>
                       <Tooltip label="Remove from group">

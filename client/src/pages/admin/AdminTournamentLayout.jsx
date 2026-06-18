@@ -99,7 +99,7 @@ export default function AdminTournamentLayout() {
           <Link to="/admin"><ArrowLeft /> All tournaments</Link>
         </Button>
 
-        <div className="surface-elevated rounded-2xl p-4 sm:p-5">
+        <div className="surface-elevated rounded-2xl p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="min-w-0 break-words font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
             <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
@@ -163,12 +163,14 @@ export default function AdminTournamentLayout() {
         <Link to="/admin"><ArrowLeft /> All tournaments</Link>
       </Button>
 
-      <div className="surface-elevated mb-6 rounded-2xl p-4 sm:p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="min-w-0 break-words font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
-          <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
-          <TournamentStatusBadge status={t.status} />
-          <div className="ml-auto flex items-center gap-2">
+      <div className="surface-elevated mb-6 rounded-2xl p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="min-w-0 break-words font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
+            <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
+            <TournamentStatusBadge status={t.status} />
+          </div>
+          <div className="flex items-center gap-2 self-start sm:shrink-0">
             <NotificationBell linkTo={() => `/admin/t/${id}/fixtures`} />
           </div>
         </div>
@@ -176,7 +178,7 @@ export default function AdminTournamentLayout() {
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          <nav className="surface-elevated flex gap-1 overflow-x-auto rounded-2xl p-2 scrollbar-thin lg:flex-col">
+          <nav className="surface-elevated flex gap-1 overflow-x-auto rounded-2xl p-2.5 scrollbar-thin lg:flex-col">
             {NAV.map((item) => {
               const Icon = item.icon;
               return (

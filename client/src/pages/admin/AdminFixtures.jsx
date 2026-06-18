@@ -151,7 +151,7 @@ function FixtureRow({ fixture, sport, onResult, onLive, onToggleLive, onReopen, 
   const score = completed ? resultSummary(fixture) || 'vs' : 'vs';
 
   return (
-    <div className="surface-elevated surface-interactive flex flex-col gap-3 rounded-2xl border border-border/75 p-3 lg:flex-row lg:items-center lg:gap-4">
+    <div className="surface-elevated surface-interactive flex flex-col gap-3 rounded-2xl border border-border/75 p-4 lg:flex-row lg:items-center lg:gap-4">
       {/* Matchup: match number + both teams (names truncate so the row can't overflow). */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="w-6 shrink-0 text-center text-xs font-bold text-muted-foreground">
@@ -373,7 +373,7 @@ export default function AdminFixtures() {
       <div className="space-y-6">
         {groupByRound(list).map((round) => (
           <div key={round.key}>
-            <h3 className="sticky top-16 z-20 -mx-1 mb-2 rounded-xl border border-border/70 bg-background/90 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <h3 className="sticky top-16 z-20 mb-2 rounded-xl border border-border/70 bg-background/90 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/75">
               {round.label}
               <span className="ml-2 font-normal normal-case text-muted-foreground/70">
                 {round.fixtures.length} {round.fixtures.length === 1 ? 'match' : 'matches'}
@@ -394,7 +394,7 @@ export default function AdminFixtures() {
       <GenerateCard tournament={tournament} tournamentId={tournamentId} hasFixtures={group.length > 0} />
 
       {!isLoading && fixtures.length > 0 && (
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="surface-elevated flex flex-col gap-3 rounded-2xl p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {STATUS_FILTERS.map((f) => (
               <FilterChip key={f.id} active={status === f.id} onClick={() => setStatus(f.id)}>
@@ -402,7 +402,7 @@ export default function AdminFixtures() {
               </FilterChip>
             ))}
           </div>
-          <div className="flex w-full items-center gap-2 lg:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
             <SearchInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -410,7 +410,7 @@ export default function AdminFixtures() {
               className="w-full lg:w-72"
             />
             {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0">
+              <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0">
                 Clear
               </Button>
             )}
