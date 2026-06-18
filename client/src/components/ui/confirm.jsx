@@ -30,19 +30,28 @@ const DEFAULTS = {
 export function ConfirmProvider({ children }) {
   const [state, setState] = React.useState(null);
   const resolver = React.useRef(null);
+  const queue = React.useRef([]);
+
+  const pumpQueue = React.useCallback(() => {
+    if (resolver.current || queue.current.length === 0) return;
+    const next = queue.current.shift();
+    resolver.current = next.resolve;
+    setState(next.options);
+  }, []);
 
   const confirm = React.useCallback((opts = {}) => {
-    setState({ ...DEFAULTS, ...opts });
     return new Promise((resolve) => {
-      resolver.current = resolve;
+      queue.current.push({ options: { ...DEFAULTS, ...opts }, resolve });
+      pumpQueue();
     });
-  }, []);
+  }, [pumpQueue]);
 
   const settle = React.useCallback((result) => {
     resolver.current?.(result);
     resolver.current = null;
     setState(null);
-  }, []);
+    queueMicrotask(pumpQueue);
+  }, [pumpQueue]);
 
   const open = state !== null;
   const isDestructive = state?.variant !== 'default';

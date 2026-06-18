@@ -2,12 +2,16 @@ import { Server } from 'socket.io';
 import { env } from '../config/env.js';
 
 let io = null;
+const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 
 /** Room name helpers keep client/server in sync on the channel naming. */
 export const rooms = {
   tournament: (id) => `tournament:${id}`,
   fixture: (id) => `fixture:${id}`,
 };
+
+const normalizeObjectId = (value) => (typeof value === 'string' ? value.trim() : '');
+const isObjectId = (value) => OBJECT_ID_RE.test(normalizeObjectId(value));
 
 /** Socket event names (shared contract with the client). */
 export const EVENTS = {
@@ -31,16 +35,20 @@ export function initSocket(httpServer) {
 
   io.on('connection', (socket) => {
     socket.on('joinTournament', (tournamentId) => {
-      if (tournamentId) socket.join(rooms.tournament(tournamentId));
+      if (!isObjectId(tournamentId)) return;
+      socket.join(rooms.tournament(normalizeObjectId(tournamentId)));
     });
     socket.on('leaveTournament', (tournamentId) => {
-      if (tournamentId) socket.leave(rooms.tournament(tournamentId));
+      if (!isObjectId(tournamentId)) return;
+      socket.leave(rooms.tournament(normalizeObjectId(tournamentId)));
     });
     socket.on('joinFixture', (fixtureId) => {
-      if (fixtureId) socket.join(rooms.fixture(fixtureId));
+      if (!isObjectId(fixtureId)) return;
+      socket.join(rooms.fixture(normalizeObjectId(fixtureId)));
     });
     socket.on('leaveFixture', (fixtureId) => {
-      if (fixtureId) socket.leave(rooms.fixture(fixtureId));
+      if (!isObjectId(fixtureId)) return;
+      socket.leave(rooms.fixture(normalizeObjectId(fixtureId)));
     });
   });
 

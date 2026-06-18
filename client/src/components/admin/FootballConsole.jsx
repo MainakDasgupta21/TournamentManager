@@ -156,7 +156,21 @@ export default function FootballConsole({
     if (score.a > score.b) winner = teamAId;
     else if (score.b > score.a) winner = teamBId;
     const football = { goals, cards, substitutions: subs, result: { winner } };
-    if (isKnockout && score.a === score.b) football.penalties = { teamA: Number(pens.teamA), teamB: Number(pens.teamB) };
+    if (isKnockout && score.a === score.b) {
+      const penA = Number(pens.teamA);
+      const penB = Number(pens.teamB);
+      if (!Number.isFinite(penA) || !Number.isFinite(penB) || penA < 0 || penB < 0) {
+        toast.error('Penalty values must be valid non-negative numbers');
+        return;
+      }
+      if (penA === penB) {
+        toast.error('Knockout penalties must produce a winner');
+        return;
+      }
+      football.penalties = { teamA: penA, teamB: penB };
+      winner = penA > penB ? teamAId : teamBId;
+      football.result = { winner };
+    }
     if (motm) football.manOfTheMatch = motm;
     const formation = cleanFormationOverrides(formationOverrides);
     if (formation) football.formation = formation;

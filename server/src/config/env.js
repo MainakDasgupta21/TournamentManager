@@ -21,6 +21,11 @@ function required(key, fallback) {
   return value;
 }
 
+function boolFromEnv(value, fallback = false) {
+  if (value == null || value === '') return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
 // Reject obviously-insecure placeholder secrets outside local dev/test.
 const WEAK_SECRET = /^(dev_|change_?me|changeme|secret|password|admin|test)/i;
 function requiredSecret(key) {
@@ -28,6 +33,16 @@ function requiredSecret(key) {
   if (!allowDevFallback && (WEAK_SECRET.test(value) || value.length < 32)) {
     throw new Error(
       `Insecure value for ${key}: set a strong random secret (e.g. \`openssl rand -hex 48\`) outside development`
+    );
+  }
+  return value;
+}
+
+function requiredSeedPassword() {
+  const value = required('SEED_ADMIN_PASSWORD', isProd ? undefined : 'admin12345');
+  if (isProd && (WEAK_SECRET.test(value) || value.length < 12)) {
+    throw new Error(
+      'Insecure value for SEED_ADMIN_PASSWORD: use a strong non-default password in production'
     );
   }
   return value;
@@ -63,12 +78,19 @@ export const env = {
     refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? '7d',
   },
 
+  rateLimit: {
+    redisUrl: process.env.RATE_LIMIT_REDIS_URL ?? '',
+  },
+
   seed: {
     name: process.env.SEED_ADMIN_NAME ?? 'Super Admin',
     email: process.env.SEED_ADMIN_EMAIL ?? 'admin@tms.local',
     // No built-in default in production: seeding a guessable super-admin
     // password would be a trivial entry point.
-    password: required('SEED_ADMIN_PASSWORD', isProd ? undefined : 'admin12345'),
+    password: requiredSeedPassword(),
+    // Production default is false so normal restarts do not reset credentials.
+    // Local dev/test default is true for convenience.
+    syncPassword: boolFromEnv(process.env.SYNC_SEED_ADMIN_PASSWORD, !isProd),
   },
 
   // Outbound email. When `host` is empty the email service falls back to logging

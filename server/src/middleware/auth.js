@@ -4,6 +4,10 @@ import { verifyAccessToken } from '../utils/tokens.js';
 import { User } from '../models/User.js';
 import { USER_ROLES, APPROVAL_STATUS } from '@tms/shared/constants';
 
+function isCurrentSession(payload, user) {
+  return Number(payload?.tv) === Number(user?.tokenVersion);
+}
+
 /**
  * Requires a valid access token. Attaches the live user document to req.user.
  * We re-load the user so a deactivated/role-changed account is rejected even
@@ -17,6 +21,9 @@ export const authenticate = asyncHandler(async (req, res, next) => {
   const payload = verifyAccessToken(token);
   const user = await User.findById(payload.sub);
   if (!user || !user.isActive) throw ApiError.unauthorized('Account is not active');
+  if (!isCurrentSession(payload, user)) {
+    throw ApiError.unauthorized('Session is no longer valid');
+  }
   // An organiser whose approval was revoked loses access even mid-session.
   if (
     user.role !== USER_ROLES.SUPER_ADMIN &&
@@ -53,7 +60,14 @@ export const optionalAuth = asyncHandler(async (req, res, next) => {
     try {
       const payload = verifyAccessToken(token);
       const user = await User.findById(payload.sub);
-      if (user?.isActive) req.user = user;
+      if (
+        user?.isActive &&
+        isCurrentSession(payload, user) &&
+        (user.role === USER_ROLES.SUPER_ADMIN ||
+          user.approvalStatus === APPROVAL_STATUS.APPROVED)
+      ) {
+        req.user = user;
+      }
     } catch {
       /* ignore invalid token on optional auth */
     }

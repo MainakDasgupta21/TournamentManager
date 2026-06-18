@@ -14,7 +14,7 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * a free-text `q` (name or email), newest first. `pendingCount` is the global
  * number of pending requests (independent of filter/page) for the nav badge.
  * Pagination is opt-in: supplying `page`/`limit` returns one page plus
- * `{ total, page, pages }`; omitting them returns the full filtered list.
+ * `{ total, page, pages }`; omitting them returns a capped filtered list.
  */
 export const listUsers = asyncHandler(async (req, res) => {
   const { status, role, q, page, limit } = req.query ?? {};
@@ -37,6 +37,7 @@ export const listUsers = asyncHandler(async (req, res) => {
     .populate('approvedBy', 'name email')
     .lean();
   if (paginate) query.skip((current - 1) * perPage).limit(perPage);
+  else query.limit(200); // defensive cap for unpaginated super-admin listings
 
   const [users, total, pendingCount] = await Promise.all([
     query,

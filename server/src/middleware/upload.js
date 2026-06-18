@@ -12,12 +12,22 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 // and, because uploads are served from our own origin, would become a stored
 // XSS vector. Only raster image types are accepted.
 const ALLOWED = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+const EXT_BY_MIME = Object.freeze({
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+});
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname || '').toLowerCase().match(/^\.[a-z0-9]{1,5}$/) || ['.png'])[0];
+    // Never trust `originalname` for extension: it is client-controlled.
+    const ext = EXT_BY_MIME[file.mimetype];
+    if (!ext) {
+      return cb(ApiError.badRequest('Only PNG, JPEG, WebP or GIF images are allowed'));
+    }
     cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9).toString(36)}${ext}`);
   },
 });

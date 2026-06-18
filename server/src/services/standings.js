@@ -56,6 +56,9 @@ function accumulateCricket(rowsById, fixture, cfg) {
   a.played += 1;
   b.played += 1;
 
+  let runsA = 0;
+  let runsB = 0;
+
   // Runs / overs for NRR. For each innings, the batting side scores `runs` in
   // `overs`; if all out (10 wickets) the full allotted overs are used per ICC.
   // `deriveCricketInnings` normalises ball-by-ball detail (when present) into
@@ -75,10 +78,14 @@ function accumulateCricket(rowsById, fixture, cfg) {
     batRow.oversFor += effectiveOvers;
     bowlRow.runsAgainst += inn.runs ?? 0;
     bowlRow.oversAgainst += effectiveOvers;
+    if (String(inn.battingTeam) === String(teamA)) runsA += inn.runs ?? 0;
+    else if (String(inn.battingTeam) === String(teamB)) runsB += inn.runs ?? 0;
   }
 
   const margin = result?.result?.margin;
-  const winnerId = result?.result?.winner ? String(result.result.winner) : null;
+  const declaredWinner = result?.result?.winner ? String(result.result.winner) : null;
+  const scoreWinner = runsA === runsB ? null : runsA > runsB ? String(teamA) : String(teamB);
+  const winnerId = scoreWinner ?? declaredWinner;
 
   if (margin === 'noResult') {
     a.noResult += 1;
@@ -121,7 +128,7 @@ function accumulateFootball(rowsById, fixture, cfg) {
   b.goalsFor += goalsB;
   b.goalsAgainst += goalsA;
 
-  const winnerId = result?.result?.winner ? String(result.result.winner) : null;
+  const winnerId = goalsA === goalsB ? null : goalsA > goalsB ? String(teamA) : String(teamB);
   if (!winnerId) {
     // A null winner in the group stage is a draw (penalties only decide
     // knockout ties, never group points).

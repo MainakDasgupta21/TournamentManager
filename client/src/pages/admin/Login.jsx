@@ -16,7 +16,6 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuth((s) => s.login);
-  const isDev = import.meta.env.DEV;
   useDocumentTitle('Sign in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,17 +78,8 @@ export default function Login() {
               </Link>
             </p>
             <p className="mt-4 rounded-md bg-secondary/50 p-3 text-xs text-muted-foreground">
-              {isDev ? (
-                <>
-                  Default local seeded admin: <code className="text-foreground">admin@tms.local</code>{' '}
-                  / <code className="text-foreground">admin12345</code>
-                </>
-              ) : (
-                <>
-                  Super admin credentials are set by server configuration and cannot be reset from this screen.
-                  Contact the site maintainer if credentials have changed.
-                </>
-              )}
+              Super admin credentials are set by server configuration and cannot be reset from this
+              screen. Contact the site maintainer if credentials have changed.
             </p>
           </CardContent>
         </Card>

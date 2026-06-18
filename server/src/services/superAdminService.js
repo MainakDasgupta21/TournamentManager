@@ -4,7 +4,7 @@ import { USER_ROLES, APPROVAL_STATUS } from '@tms/shared/constants';
 
 /**
  * Ensure the configured seed super-admin account exists and is aligned with the
- * fixed credentials policy.
+ * fixed profile policy.
  *
  * This prevents production lockouts when a deployment starts against an empty DB
  * or when the super-admin document drifted from configured values.
@@ -53,10 +53,14 @@ export async function ensureSeedSuperAdmin({ log = false } = {}) {
     changed = true;
   }
 
-  const hasConfiguredPassword = await existing.comparePassword(env.seed.password);
-  if (!hasConfiguredPassword) {
-    await existing.setPassword(env.seed.password);
-    changed = true;
+  if (env.seed.syncPassword) {
+    const hasConfiguredPassword = await existing.comparePassword(env.seed.password);
+    if (!hasConfiguredPassword) {
+      await existing.setPassword(env.seed.password);
+      changed = true;
+    }
+  } else if (log) {
+    console.log('[superadmin] password sync disabled; leaving existing password unchanged');
   }
 
   if (changed) {

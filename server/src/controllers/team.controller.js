@@ -5,11 +5,16 @@ import { Team } from '../models/Team.js';
 import { Group } from '../models/Group.js';
 import { Player } from '../models/Player.js';
 import { Fixture } from '../models/Fixture.js';
+import { Standing } from '../models/Standing.js';
+import { KnockoutBracket } from '../models/KnockoutBracket.js';
+import { recalcAllStandings } from '../services/standingsService.js';
+import { emitToTournament, EVENTS } from '../socket/index.js';
 import {
   SPORTS,
   CRICKET_ROLES,
   FOOTBALL_POSITIONS,
   FOOTBALL_FORMATION_PRESETS,
+  FIXTURE_STATUS,
 } from '@tms/shared/constants';
 
 /** Roles valid for the tournament's sport. */
@@ -177,9 +182,42 @@ export const deleteTeam = asyncHandler(async (req, res) => {
   });
   if (!team) throw ApiError.notFound('Team not found');
 
+  const fixtureRef = await Fixture.findOne({
+    tournamentId: req.tournament._id,
+    $or: [{ teamA: team._id }, { teamB: team._id }, { winner: team._id }],
+  })
+    .select('status')
+    .lean();
+  if (fixtureRef) {
+    if (fixtureRef.status === FIXTURE_STATUS.COMPLETED) {
+      throw ApiError.conflict('Cannot delete a team after it has played completed fixtures');
+    }
+    throw ApiError.conflict(
+      'Cannot delete a team while fixtures reference it. Regenerate or clear fixtures first.'
+    );
+  }
+
+  const bracketRef = await KnockoutBracket.findOne({
+    tournamentId: req.tournament._id,
+    $or: [
+      { 'rounds.matchups.slotA': team._id },
+      { 'rounds.matchups.slotB': team._id },
+    ],
+  })
+    .select('_id')
+    .lean();
+  if (bracketRef) {
+    throw ApiError.conflict(
+      'Cannot delete a team referenced by the knockout bracket. Regenerate the bracket first.'
+    );
+  }
+
   if (team.groupId) await Group.findByIdAndUpdate(team.groupId, { $pull: { teams: team._id } });
+  await Standing.deleteMany({ tournamentId: req.tournament._id, teamId: team._id });
   await Player.deleteMany({ teamId: team._id });
   await team.deleteOne();
+  await recalcAllStandings(req.tournament._id);
+  emitToTournament(req.tournament._id, EVENTS.STANDINGS, { full: true });
 
   return sendSuccess(res, { message: 'Team deleted' });
 });

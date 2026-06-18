@@ -1,4 +1,5 @@
 import { Moon, Sun } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTheme } from '@/store/theme';
 import { useAuth } from '@/store/auth';
 import { useUpdateThemePreference } from '@/hooks/queries';
@@ -17,9 +18,17 @@ export default function ThemeToggle({ className }) {
   const isDark = theme === 'dark';
 
   const onToggle = () => {
+    const previous = theme;
     const next = isDark ? 'light' : 'dark';
     setTheme(next);
-    if (isAuthenticated) persistTheme.mutate(next);
+    if (isAuthenticated) {
+      persistTheme.mutate(next, {
+        onError: () => {
+          setTheme(previous);
+          toast.error('Could not save theme preference');
+        },
+      });
+    }
   };
 
   return (

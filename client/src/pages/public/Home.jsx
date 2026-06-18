@@ -10,7 +10,7 @@ import { CountUp } from '@/components/ui/count-up';
 import { TournamentStatusBadge, isInProgress } from '@/components/ui/status-badge';
 import { EmptyState, ErrorState, SkeletonGrid, FilterChip, SearchInput } from '@/components/ui/misc';
 import { formatDate, sportLabel } from '@/lib/format';
-import { accentStyle, cn } from '@/lib/utils';
+import { accentStyle, cn, cssBackgroundImageUrl } from '@/lib/utils';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 
 const FILTERS = [
@@ -30,6 +30,7 @@ function matchesFilter(t, filter) {
 
 function TournamentCard({ t }) {
   const live = isInProgress(t.status);
+  const bannerBackground = cssBackgroundImageUrl(t.bannerImage);
   return (
     <motion.div variants={staggerItem} style={accentStyle(t.primaryColor)} className="h-full">
       <motion.div whileHover={{ y: -6 }} whileTap={{ scale: 0.99 }} transition={{ type: 'spring', stiffness: 380, damping: 30 }} className="h-full">
@@ -38,8 +39,8 @@ function TournamentCard({ t }) {
             <div
               className="relative h-24 w-full"
               style={{
-                background: t.bannerImage
-                  ? `url(${t.bannerImage}) center/cover`
+                background: bannerBackground
+                  ? `${bannerBackground} center/cover`
                   : `linear-gradient(135deg, rgb(var(--team-accent-rgb) / 0.55), rgb(var(--team-accent-rgb) / 0.05))`,
               }}
             >
@@ -77,7 +78,7 @@ function TournamentCard({ t }) {
 }
 
 export default function Home() {
-  const { data: tournaments, isLoading, isError, refetch } = useTournaments();
+  const { data: tournaments, isLoading, isError, refetch } = useTournaments({ limit: 100 });
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('newest');

@@ -1,12 +1,10 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess, sendCreated } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
 import { KnockoutBracket } from '../models/KnockoutBracket.js';
 import {
   generateAndPersist,
   applyAdjustment,
   lockBracket,
-  getBracket,
 } from '../services/knockoutService.js';
 import { recordAudit } from '../services/auditService.js';
 import { emitToTournament, EVENTS } from '../socket/index.js';
@@ -73,5 +71,3 @@ export const lockKnockout = asyncHandler(async (req, res) => {
   });
   return sendSuccess(res, { message: 'Bracket locked', data: { bracket } });
 });
-
-export { getBracket, ApiError };

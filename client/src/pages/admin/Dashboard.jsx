@@ -116,7 +116,8 @@ export default function Dashboard() {
 
   // Clamp the page if results shrank beneath us (e.g. after a delete).
   useEffect(() => {
-    if (!isFetching && page > pages) setPage(pages);
+    const safePages = Math.max(pages, 1);
+    if (!isFetching && page > safePages) setPage(safePages);
   }, [isFetching, page, pages]);
 
   const onDelete = async (t) => {

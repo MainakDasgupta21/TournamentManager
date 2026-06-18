@@ -140,7 +140,8 @@ export default function AccessRequests() {
 
   // Clamp the page if the result set shrank (e.g. after approving the last item).
   useEffect(() => {
-    if (!isFetching && page > pages) setPage(pages);
+    const safePages = Math.max(pages, 1);
+    if (!isFetching && page > safePages) setPage(safePages);
   }, [isFetching, page, pages]);
 
   // Organisers must never reach this maintainer-only screen.

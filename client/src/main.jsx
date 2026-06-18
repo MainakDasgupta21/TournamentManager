@@ -34,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // the dev server's modules).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register(`/sw.js?v=${__SW_BUILD_ID__}`).catch(() => {
       /* SW registration is best-effort */
     });
   });

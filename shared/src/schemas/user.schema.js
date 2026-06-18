@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { APPROVAL_STATUS, APPROVAL_STATUS_VALUES, USER_ROLE_VALUES } from '../constants.js';
+import { objectId } from './common.js';
 
 /**
  * Super-admin user listing, optionally filtered by approval status / role and a
@@ -24,6 +25,7 @@ export const listUsersQuerySchema = z.object({
  * settable here (an account never reverts to `pending`).
  */
 export const updateApprovalSchema = z.object({
+  params: z.object({ id: objectId }),
   body: z.object({
     status: z.enum([APPROVAL_STATUS.APPROVED, APPROVAL_STATUS.REJECTED]),
     note: z.string().trim().max(500).optional(),

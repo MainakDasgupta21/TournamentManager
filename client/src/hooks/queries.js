@@ -2,8 +2,11 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
 import { useAuth } from '@/store/auth';
+import { schemas as sharedSchemas } from '@tms/shared';
 
 const get = (url, params) => api.get(url, { params }).then((r) => r.data.data);
+const parseBody = (schema, body) => schema.parse({ body }).body;
+const parseParamsBody = (schema, params, body) => schema.parse({ params, body }).body;
 
 /* --------------------------------- Uploads -------------------------------- */
 
@@ -52,8 +55,10 @@ export function useUsers(filters, options) {
 export function useUpdateApproval() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, note }) =>
-      api.patch(`/users/${id}/approval`, { status, note }).then((r) => r.data.data.user),
+    mutationFn: ({ id, status, note }) => {
+      const body = parseParamsBody(sharedSchemas.updateApprovalSchema, { id }, { status, note });
+      return api.patch(`/users/${id}/approval`, body).then((r) => r.data.data.user);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
 }
@@ -71,8 +76,16 @@ export function useTournamentAccessRequests(filters, options) {
 export function useReviewTournamentAccessRequest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, note }) =>
-      api.patch(`/tournament-access-requests/${id}/review`, { status, note }).then((r) => r.data.data.request),
+    mutationFn: ({ id, status, note }) => {
+      const body = parseParamsBody(
+        sharedSchemas.reviewTournamentAccessRequestSchema,
+        { id },
+        { status, note }
+      );
+      return api
+        .patch(`/tournament-access-requests/${id}/review`, body)
+        .then((r) => r.data.data.request);
+    },
     onSuccess: (_request, vars) => {
       qc.invalidateQueries({ queryKey: ['tournamentAccessRequests'] });
       qc.invalidateQueries({ queryKey: ['tournaments'] });
@@ -119,7 +132,10 @@ export function useTournament(id) {
 export function useCreateTournament() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body) => api.post('/tournaments', body).then((r) => r.data.data.tournament),
+    mutationFn: (body) => {
+      const parsedBody = parseBody(sharedSchemas.createTournamentSchema, body);
+      return api.post('/tournaments', parsedBody).then((r) => r.data.data.tournament);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tournaments'] }),
   });
 }
@@ -128,10 +144,15 @@ export function useCreateTournament() {
 export function useRequestTournamentAccess() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ tournamentId, message }) =>
-      api
-        .post(`/tournaments/${tournamentId}/access-requests`, message ? { message } : {})
-        .then((r) => r.data.data.request),
+    mutationFn: ({ tournamentId, message }) => {
+      const body = parseBody(
+        sharedSchemas.createTournamentAccessRequestSchema,
+        message ? { message } : {}
+      );
+      return api
+        .post(`/tournaments/${tournamentId}/access-requests`, body)
+        .then((r) => r.data.data.request);
+    },
     onSuccess: (_request, vars) => {
       qc.invalidateQueries({ queryKey: ['tournaments'] });
       qc.invalidateQueries({ queryKey: ['tournamentAccessRequests'] });
@@ -145,7 +166,10 @@ export function useRequestTournamentAccess() {
 export function useUpdateTournament(id) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body) => api.patch(`/tournaments/${id}`, body).then((r) => r.data.data.tournament),
+    mutationFn: (body) => {
+      const parsedBody = parseBody(sharedSchemas.updateTournamentSchema, body);
+      return api.patch(`/tournaments/${id}`, parsedBody).then((r) => r.data.data.tournament);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.tournament(id) });
       qc.invalidateQueries({ queryKey: ['tournaments'] });
@@ -156,8 +180,10 @@ export function useUpdateTournament(id) {
 export function useUpdatePointsConfig(id) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (pointsConfig) =>
-      api.patch(`/tournaments/${id}/points-config`, { pointsConfig }).then((r) => r.data.data),
+    mutationFn: (pointsConfig) => {
+      const body = parseBody(sharedSchemas.updatePointsConfigSchema, { pointsConfig });
+      return api.patch(`/tournaments/${id}/points-config`, body).then((r) => r.data.data);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.tournament(id) }),
   });
 }
@@ -188,7 +214,7 @@ export function useAdminCandidates(id, q, enabled = true) {
     queryKey: qk.adminCandidates(id, q?.trim()),
     queryFn: () => get(`/tournaments/${id}/admin-candidates`, { q: q.trim() }),
     select: (d) => d.candidates,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -372,19 +398,25 @@ export function useFixtureMutations(id) {
     submitResult: useMutation({
       // Returns the full payload ({ fixture, requiresConfirm, affected }) so the
       // caller can surface the knockout downstream-invalidation confirm flow.
-      mutationFn: ({ fixtureId, body }) =>
-        api.patch(`/fixtures/${fixtureId}/result`, body).then((r) => r.data.data),
+      mutationFn: ({ fixtureId, body }) => {
+        const parsedBody = parseBody(sharedSchemas.submitResultSchema, body);
+        return api.patch(`/fixtures/${fixtureId}/result`, parsedBody).then((r) => r.data.data);
+      },
       onSuccess: invalidate,
     }),
     editEvents: useMutation({
       // Add/edit/delete a single ball or goal/card/sub on a fixture (Module 5B).
-      mutationFn: ({ fixtureId, body }) =>
-        api.patch(`/fixtures/${fixtureId}/events`, body).then((r) => r.data.data.fixture),
+      mutationFn: ({ fixtureId, body }) => {
+        const parsedBody = parseBody(sharedSchemas.eventOpSchema, body);
+        return api.patch(`/fixtures/${fixtureId}/events`, parsedBody).then((r) => r.data.data.fixture);
+      },
       onSuccess: invalidate,
     }),
     liveUpdate: useMutation({
-      mutationFn: ({ fixtureId, body }) =>
-        api.patch(`/fixtures/${fixtureId}/live-update`, body).then((r) => r.data.data),
+      mutationFn: ({ fixtureId, body }) => {
+        const parsedBody = parseBody(sharedSchemas.liveUpdateSchema, body);
+        return api.patch(`/fixtures/${fixtureId}/live-update`, parsedBody).then((r) => r.data.data);
+      },
     }),
   };
 }
@@ -416,7 +448,7 @@ export function useAuditLogs(id, filters) {
     enabled: !!id,
     queryKey: qk.auditLogs(id, filters),
     queryFn: () => get(`/tournaments/${id}/audit-logs`, filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -495,8 +527,12 @@ export function useKnockoutMutations(id) {
   };
   return {
     generate: useMutation({
-      mutationFn: (body) =>
-        api.post(`/tournaments/${id}/knockouts/generate`, body).then((r) => r.data.data.bracket),
+      mutationFn: (body) => {
+        const parsedBody = parseBody(sharedSchemas.generateKnockoutSchema, body);
+        return api
+          .post(`/tournaments/${id}/knockouts/generate`, parsedBody)
+          .then((r) => r.data.data.bracket);
+      },
       onSuccess: invalidate,
     }),
     adjust: useMutation({

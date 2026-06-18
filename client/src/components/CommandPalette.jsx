@@ -33,7 +33,7 @@ export default function CommandPalette() {
   const authed = useAuth((s) => s.status === 'authenticated');
   const role = useAuth((s) => s.user?.role);
   const isSuperAdmin = role === 'superadmin';
-  const { data: tournaments } = useTournaments();
+  const { data: tournaments } = useTournaments({ limit: 100, sort: 'name' });
   const listRef = useRef(null);
 
   useEffect(() => {

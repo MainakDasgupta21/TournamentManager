@@ -169,7 +169,7 @@ export default function Bracket({ bracket, onPickMatchup }) {
         </div>
       </div>
 
-      {thirdPlace && (
+      {thirdPlace?.matchups?.[0] && (
         <div className="max-w-60">
           <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[hsl(var(--warning))]">
             Third-place playoff

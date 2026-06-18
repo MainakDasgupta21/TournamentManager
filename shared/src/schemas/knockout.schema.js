@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { objectId } from './common.js';
+import { isoDate, objectId } from './common.js';
 
 export const generateKnockoutSchema = z.object({
   body: z
@@ -8,10 +8,7 @@ export const generateKnockoutSchema = z.object({
       format: z.enum(['single-elimination', 'playoff']).default('single-elimination'),
       qualifiersPerGroup: z.number().int().min(1).max(32).optional(),
       thirdPlacePlayoff: z.boolean().default(false),
-      startDate: z
-        .union([z.string(), z.date()])
-        .transform((v) => new Date(v))
-        .optional(),
+      startDate: isoDate.optional(),
       daysBetweenRounds: z.number().int().min(0).max(60).default(3),
       defaultVenue: z.string().trim().max(160).optional(),
     })

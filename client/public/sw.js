@@ -1,6 +1,7 @@
 /* TourneyOps service worker. Caches the app shell + hashed build assets for
  * offline use. The API (/api) and websockets (/socket.io) are never cached. */
-const VERSION = 'tms-cache-v1';
+const SW_VERSION = new URL(self.location.href).searchParams.get('v') || 'v1';
+const VERSION = `tms-cache-${SW_VERSION}`;
 const APP_SHELL = ['/', '/index.html', '/trophy.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -78,11 +79,28 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const target = event.notification.data?.url || '/';
+  let targetUrl;
+  try {
+    targetUrl = new URL(target, self.location.origin);
+  } catch {
+    targetUrl = new URL('/', self.location.origin);
+  }
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const existing = clients.find((c) => c.url.includes(target));
+      const existing = clients.find((c) => {
+        try {
+          const current = new URL(c.url);
+          return (
+            current.origin === targetUrl.origin &&
+            current.pathname === targetUrl.pathname &&
+            current.search === targetUrl.search
+          );
+        } catch {
+          return false;
+        }
+      });
       if (existing) return existing.focus();
-      return self.clients.openWindow(target);
+      return self.clients.openWindow(targetUrl.href);
     })
   );
 });

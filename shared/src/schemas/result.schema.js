@@ -205,13 +205,25 @@ export const footballResultSchema = z.object({
  * structurally here.
  */
 export const submitResultSchema = z.object({
-  body: z.object({
-    // Acknowledge propagation when re-submitting a knockout result whose winner
-    // changed and a downstream match was already played (Module 5B).
-    confirm: z.boolean().optional(),
-    cricket: cricketResultSchema.optional(),
-    football: footballResultSchema.optional(),
-  }),
+  body: z
+    .object({
+      // Acknowledge propagation when re-submitting a knockout result whose winner
+      // changed and a downstream match was already played (Module 5B).
+      confirm: z.boolean().optional(),
+      cricket: cricketResultSchema.optional(),
+      football: footballResultSchema.optional(),
+    })
+    .superRefine((value, ctx) => {
+      const hasCricket = Boolean(value.cricket);
+      const hasFootball = Boolean(value.football);
+      if (hasCricket === hasFootball) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Provide exactly one result payload: cricket or football',
+          path: ['cricket'],
+        });
+      }
+    }),
 });
 
 /* =====================================================================
@@ -219,8 +231,8 @@ export const submitResultSchema = z.object({
  * single goal/card/substitution, even after a match is completed.
  * ===================================================================== */
 
-export const eventOpSchema = z.object({
-  body: z.object({
+const eventOpBodySchema = z
+  .object({
     target: z.enum(['cricketBall', 'cricketOver', 'goal', 'card', 'substitution']),
     op: z.enum(['add', 'edit', 'delete']),
     // Cricket location.
@@ -235,7 +247,78 @@ export const eventOpSchema = z.object({
     goal: footballGoalSchema.optional(),
     card: footballCardSchema.optional(),
     sub: footballSubSchema.optional(),
-  }),
+  })
+  .superRefine((value, ctx) => {
+    const needsPayload = value.op === 'add' || value.op === 'edit';
+
+    if (value.target === 'cricketOver') {
+      if (value.op !== 'add' && value.overIndex == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'overIndex is required for edit/delete cricketOver operations',
+          path: ['overIndex'],
+        });
+      }
+      if (needsPayload && !value.over) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'over payload is required for add/edit cricketOver operations',
+          path: ['over'],
+        });
+      }
+      return;
+    }
+
+    if (value.target === 'cricketBall') {
+      if (value.overIndex == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'overIndex is required for cricketBall operations',
+          path: ['overIndex'],
+        });
+      }
+      if (value.op !== 'add' && value.ballIndex == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ballIndex is required for edit/delete cricketBall operations',
+          path: ['ballIndex'],
+        });
+      }
+      if (needsPayload && !value.ball) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ball payload is required for add/edit cricketBall operations',
+          path: ['ball'],
+        });
+      }
+      return;
+    }
+
+    if (value.op !== 'add' && value.index == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'index is required for edit/delete football event operations',
+        path: ['index'],
+      });
+    }
+
+    const payloadKey =
+      value.target === 'goal'
+        ? 'goal'
+        : value.target === 'card'
+          ? 'card'
+          : 'sub';
+    if (needsPayload && !value[payloadKey]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${payloadKey} payload is required for add/edit ${value.target} operations`,
+        path: [payloadKey],
+      });
+    }
+  });
+
+export const eventOpSchema = z.object({
+  body: eventOpBodySchema,
 });
 
 /* =====================================================================

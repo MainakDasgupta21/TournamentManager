@@ -24,19 +24,29 @@ async function assertTeamsBelong(tournamentId, teamIds = []) {
 
 export const createGroup = asyncHandler(async (req, res) => {
   const { name, teams = [] } = req.body;
-  await assertTeamsBelong(req.tournament._id, teams);
+  const nextTeams = [...new Set(teams.map(String))];
+  await assertTeamsBelong(req.tournament._id, nextTeams);
   const order = await Group.countDocuments({ tournamentId: req.tournament._id });
+
+  if (nextTeams.length) {
+    // A team can only belong to one group at a time; detach from any prior group
+    // before creating this one so group arrays and Team.groupId stay in sync.
+    await Group.updateMany(
+      { tournamentId: req.tournament._id },
+      { $pull: { teams: { $in: nextTeams } } }
+    );
+  }
 
   const group = await Group.create({
     tournamentId: req.tournament._id,
     name,
-    teams,
+    teams: nextTeams,
     order,
   });
 
-  if (teams.length) {
+  if (nextTeams.length) {
     await Team.updateMany(
-      { _id: { $in: teams }, tournamentId: req.tournament._id },
+      { _id: { $in: nextTeams }, tournamentId: req.tournament._id },
       { $set: { groupId: group._id } }
     );
   }

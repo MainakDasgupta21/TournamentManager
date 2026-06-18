@@ -78,8 +78,7 @@ export function resultSummary(fixture) {
     return inn;
   }
   if (fixture.result.goals) {
-    const a = fixture.result.goals.filter((g) => String(g.team) === String(fixture.teamA?._id)).length;
-    const b = fixture.result.goals.filter((g) => String(g.team) === String(fixture.teamB?._id)).length;
+    const { a, b } = footballScore(fixture);
     return `${a} - ${b}`;
   }
   return '';

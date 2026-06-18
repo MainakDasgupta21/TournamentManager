@@ -24,7 +24,7 @@ Socket.io API and a React 19 SPA, sharing domain constants and Zod schemas.
 # 1. configure the API (Mongo URI, JWT secrets, seed credentials)
 cp server/.env.example server/.env
 
-# 2. install every workspace (root + server + client)
+# 2. install every workspace (root + shared + server + client)
 npm run install:all
 
 # 3. seed the super admin + a full demo dataset
@@ -74,7 +74,7 @@ tournaments to exercise every UI state:
 
 | Command | What it does |
 | --- | --- |
-| `npm run install:all` | Install root, server, and client dependencies |
+| `npm run install:all` | Install root, shared, server, and client dependencies |
 | `npm run dev` | Run API + SPA together (concurrently) |
 | `npm run dev:server` / `npm run dev:client` | Run one side only |
 | `npm run seed` / `npm run seed:demo` | Seed the super admin / demo dataset |

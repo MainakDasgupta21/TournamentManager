@@ -78,6 +78,7 @@ export const requestTournamentAccess = asyncHandler(async (req, res) => {
 /**
  * Super-admin review queue for tournament access requests.
  * Supports status filter + optional search by tournament name/requester.
+ * Unpaginated calls are defensively capped.
  */
 export const listTournamentAccessRequests = asyncHandler(async (req, res) => {
   const { status, q, page, limit } = req.query ?? {};
@@ -112,6 +113,7 @@ export const listTournamentAccessRequests = asyncHandler(async (req, res) => {
     .populate('reviewedBy', 'name email')
     .lean();
   if (paginate) query.skip((current - 1) * perPage).limit(perPage);
+  else query.limit(200); // defensive cap for unpaginated review-queue fetches
 
   const [requests, total, pendingCount] = await Promise.all([
     query,

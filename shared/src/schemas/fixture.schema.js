@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FIXTURE_STATUS_VALUES } from '../constants.js';
+import { FIXTURE_STAGE_VALUES, FIXTURE_STATUS_VALUES } from '../constants.js';
 import { isoDate, nonEmptyString, objectId } from './common.js';
 
 /**
@@ -40,9 +40,9 @@ export const listFixturesQuery = z.object({
   query: z.object({
     groupId: objectId.optional(),
     teamId: objectId.optional(),
-    stage: z.string().optional(),
+    stage: z.enum(FIXTURE_STAGE_VALUES).optional(),
     status: z.enum(FIXTURE_STATUS_VALUES).optional(),
-    from: z.string().optional(),
-    to: z.string().optional(),
+    from: isoDate.optional(),
+    to: isoDate.optional(),
   }),
 });

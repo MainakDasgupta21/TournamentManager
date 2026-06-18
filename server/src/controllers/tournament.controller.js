@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendCreated, sendSuccess } from '../utils/ApiResponse.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -56,6 +57,14 @@ const STATE_TO_STATUSES = {
   completed: [TOURNAMENT_STATUS.COMPLETED],
 };
 
+/** Explicit lifecycle: setup -> groupStage -> knockoutStage -> completed. */
+const ALLOWED_STATUS_TRANSITIONS = {
+  [TOURNAMENT_STATUS.SETUP]: [TOURNAMENT_STATUS.SETUP, TOURNAMENT_STATUS.GROUP_STAGE],
+  [TOURNAMENT_STATUS.GROUP_STAGE]: [TOURNAMENT_STATUS.GROUP_STAGE, TOURNAMENT_STATUS.KNOCKOUT_STAGE],
+  [TOURNAMENT_STATUS.KNOCKOUT_STAGE]: [TOURNAMENT_STATUS.KNOCKOUT_STAGE, TOURNAMENT_STATUS.COMPLETED],
+  [TOURNAMENT_STATUS.COMPLETED]: [TOURNAMENT_STATUS.COMPLETED],
+};
+
 /** Escape user text before embedding it in a (case-insensitive) RegExp. */
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -76,8 +85,8 @@ function toRequestSummary(request) {
  * Public list with light filtering, optional name search, sort and pagination.
  * Admins see a `canManage` flag so the client can show edit affordances without
  * a second request. Pagination is opt-in: when neither `page` nor `limit` is
- * supplied the full filtered list is returned (the public Home and command
- * palette rely on this); supplying a page returns `{ total, page, pages }`.
+ * supplied, a capped filtered list (max 200) is returned; supplying a page
+ * returns `{ total, page, pages }`.
  */
 export const listTournaments = asyncHandler(async (req, res) => {
   const { sport, status, state, q, sort, page, limit, mine } = req.query;
@@ -99,6 +108,7 @@ export const listTournaments = asyncHandler(async (req, res) => {
 
   const query = Tournament.find(filter).sort(sortSpec).lean();
   if (paginate) query.skip((current - 1) * perPage).limit(perPage);
+  else query.limit(200); // defensive cap for unpaginated public/admin fetches
 
   const [rows, total] = await Promise.all([
     query,
@@ -190,6 +200,11 @@ export const updateTournament = asyncHandler(async (req, res) => {
   if (req.body.sportType && req.body.sportType !== req.tournament.sportType) {
     throw ApiError.badRequest('sportType cannot be changed after creation');
   }
+  const nextStartDate = req.body.startDate ?? req.tournament.startDate;
+  const nextEndDate = req.body.endDate ?? req.tournament.endDate;
+  if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
+    throw ApiError.badRequest('endDate must be on or after startDate');
+  }
   assertTiebreakersValid(req.tournament.sportType, req.body.pointsConfig?.tiebreakerOrder);
 
   Object.assign(req.tournament, req.body);
@@ -232,6 +247,11 @@ export const updateStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
   if (!TOURNAMENT_STATUS_VALUES.includes(status)) {
     throw ApiError.badRequest('Invalid status');
+  }
+  const currentStatus = req.tournament.status;
+  const allowed = ALLOWED_STATUS_TRANSITIONS[currentStatus] ?? [currentStatus];
+  if (!allowed.includes(status)) {
+    throw ApiError.conflict(`Cannot move status from ${currentStatus} to ${status}`);
   }
   req.tournament.status = status;
   await req.tournament.save();
@@ -367,17 +387,45 @@ export const removeAdmin = asyncHandler(async (req, res) => {
 });
 
 /** Cascade delete a tournament and all of its dependent documents. */
+function isTransactionUnsupported(err) {
+  const message = String(err?.message ?? '');
+  return /transaction|replica set|mongos|no transaction/i.test(message);
+}
+
+async function deleteTournamentCascade(id, session) {
+  const options = session ? { session } : {};
+  await Promise.all([
+    Team.deleteMany({ tournamentId: id }, options),
+    Group.deleteMany({ tournamentId: id }, options),
+    Player.deleteMany({ tournamentId: id }, options),
+    Fixture.deleteMany({ tournamentId: id }, options),
+    Standing.deleteMany({ tournamentId: id }, options),
+    KnockoutBracket.deleteMany({ tournamentId: id }, options),
+    TournamentAccessRequest.deleteMany({ tournamentId: id }, options),
+    AuditLog.deleteMany({ tournamentId: id }, options),
+  ]);
+}
+
 export const deleteTournament = asyncHandler(async (req, res) => {
   const id = req.tournament._id;
-  await Promise.all([
-    Team.deleteMany({ tournamentId: id }),
-    Group.deleteMany({ tournamentId: id }),
-    Player.deleteMany({ tournamentId: id }),
-    Fixture.deleteMany({ tournamentId: id }),
-    Standing.deleteMany({ tournamentId: id }),
-    KnockoutBracket.deleteMany({ tournamentId: id }),
-    AuditLog.deleteMany({ tournamentId: id }),
-  ]);
+  try {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await deleteTournamentCascade(id, session);
+        await req.tournament.deleteOne({ session });
+      });
+      return sendSuccess(res, { message: 'Tournament deleted' });
+    } finally {
+      await session.endSession();
+    }
+  } catch (err) {
+    // Local standalone MongoDB does not support transactions; fall back to the
+    // legacy best-effort cascade so dev environments still work.
+    if (!isTransactionUnsupported(err)) throw err;
+  }
+
+  await deleteTournamentCascade(id);
   await req.tournament.deleteOne();
   return sendSuccess(res, { message: 'Tournament deleted' });
 });

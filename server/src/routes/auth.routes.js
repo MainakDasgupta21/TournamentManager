@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { schemas } from '@tms/shared';
 import { validate } from '../middleware/validate.js';
-import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { USER_ROLES } from '@tms/shared/constants';
 import {
@@ -26,11 +26,8 @@ router.use(authLimiter);
 // Public organiser self-signup. Creates a pending account (no tokens issued).
 router.post('/signup', validate(schemas.signupSchema), signup);
 
-// optionalAuth so a super admin token (if present) is recognised; the
-// controller enforces who may create which role.
 router.post(
   '/register',
-  optionalAuth,
   authenticate,
   authorize(USER_ROLES.SUPER_ADMIN),
   validate(schemas.registerSchema),

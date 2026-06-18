@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { SPORT_VALUES, SPORTS, TIEBREAKERS, TOURNAMENT_STATUS_VALUES } from '../constants.js';
+import {
+  AUDIT_ENTITY_VALUES,
+  SPORT_VALUES,
+  SPORTS,
+  TIEBREAKERS,
+  TOURNAMENT_STATUS_VALUES,
+} from '../constants.js';
 import { hexColor, isoDate, nonEmptyString, objectId } from './common.js';
 
 export const bonusPointRuleSchema = z.object({
@@ -23,7 +29,12 @@ export const pointsConfigSchema = z.object({
     description: '',
     bonusPoints: 0,
   }),
-  tiebreakerOrder: z.array(z.string()).min(1),
+  tiebreakerOrder: z
+    .array(z.string())
+    .min(1)
+    .refine((value) => new Set(value).size === value.length, {
+      message: 'tiebreakerOrder must not contain duplicates',
+    }),
 });
 
 export const groupSettingsSchema = z.object({
@@ -91,8 +102,7 @@ export const updatePointsConfigSchema = z.object({
  *
  * `state` is a UI-friendly grouping ("live" spans group + knockout stages);
  * `q` is a name search; `page`/`limit` are optional — when omitted the endpoint
- * returns the full (filtered) list for callers that need it (public Home, the
- * command palette), and paginates only when a caller asks for a page.
+ * returns a capped filtered list and paginates only when a caller asks for a page.
  */
 export const listTournamentsQuerySchema = z.object({
   query: z.object({
@@ -147,7 +157,7 @@ export const auditLogQuerySchema = z.object({
   query: z.object({
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(25),
-    entityType: z.string().trim().min(1).optional(),
+    entityType: z.enum(AUDIT_ENTITY_VALUES).optional(),
   }),
 });
 

@@ -10,8 +10,9 @@ export const objectId = z
   .regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
 export const isoDate = z
-  .union([z.string().datetime({ offset: true }), z.date()])
-  .transform((v) => new Date(v));
+  .union([z.string().trim().min(1), z.date()])
+  .transform((v) => new Date(v))
+  .refine((d) => !Number.isNaN(d.getTime()), 'Invalid date');
 
 export const hexColor = z
   .string()

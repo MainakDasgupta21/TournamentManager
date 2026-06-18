@@ -139,7 +139,8 @@ export default function TournamentAccessRequests() {
   const activeMutationId = update.isPending ? update.variables?.id : null;
 
   useEffect(() => {
-    if (!isFetching && page > pages) setPage(pages);
+    const safePages = Math.max(pages, 1);
+    if (!isFetching && page > safePages) setPage(safePages);
   }, [isFetching, page, pages]);
 
   if (!isSuperAdmin) return <Navigate to="/admin" replace />;

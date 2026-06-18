@@ -3,9 +3,14 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
+const swBuildId = Date.now().toString();
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __SW_BUILD_ID__: JSON.stringify(swBuildId),
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),

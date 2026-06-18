@@ -14,17 +14,6 @@ export function canManageTournament(user, tournament) {
 }
 
 /**
- * True if the user *owns* the tournament — its creator, or a super admin.
- * Stricter than canManageTournament: a co-admin can manage content but is not
- * an owner, so they cannot add/remove fellow collaborators.
- */
-export function isTournamentOwner(user, tournament) {
-  if (!user) return false;
-  if (user.role === USER_ROLES.SUPER_ADMIN) return true;
-  return String(tournament.createdBy) === String(user._id);
-}
-
-/**
  * Loads the tournament referenced by :id (or :tournamentId) onto req.tournament.
  * Use on all tournament-scoped routes so we hit the DB once and 404 early.
  */
@@ -56,17 +45,6 @@ export const loadTournamentFromFixture = asyncHandler(async (req, res, next) => 
 export const requireTournamentManager = asyncHandler(async (req, res, next) => {
   if (!canManageTournament(req.user, req.tournament)) {
     throw ApiError.forbidden('You cannot manage this tournament');
-  }
-  next();
-});
-
-/**
- * Guards owner-only actions (collaborator management). Must run after
- * authenticate + loadTournament.
- */
-export const requireTournamentOwner = asyncHandler(async (req, res, next) => {
-  if (!isTournamentOwner(req.user, req.tournament)) {
-    throw ApiError.forbidden('Only the tournament owner or a super admin can manage collaborators');
   }
   next();
 });

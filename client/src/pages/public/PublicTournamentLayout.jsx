@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, SkeletonHero, Skeleton } from '@/components/ui/
 import NotificationBell from '@/components/NotificationBell';
 import PageTransition from '@/components/layout/PageTransition';
 import { formatDate, sportLabel } from '@/lib/format';
-import { accentStyle, cn } from '@/lib/utils';
+import { accentStyle, cn, cssBackgroundImageUrl } from '@/lib/utils';
 
 function Tab({ to, label, end }) {
   return (
@@ -114,6 +114,7 @@ export default function PublicTournamentLayout() {
 
   const t = data.tournament;
   const liveCount = liveFixtures?.length ?? 0;
+  const bannerBackground = cssBackgroundImageUrl(t.bannerImage);
 
   return (
     <div style={accentStyle(t.primaryColor)}>
@@ -125,8 +126,8 @@ export default function PublicTournamentLayout() {
           <div
             className="absolute inset-0 bg-grid opacity-35"
             style={{
-              background: t.bannerImage
-                ? `linear-gradient(to top, hsl(var(--background)) 5%, transparent), url(${t.bannerImage}) center/cover`
+              background: bannerBackground
+                ? `linear-gradient(to top, hsl(var(--background)) 5%, transparent), ${bannerBackground} center/cover`
                 : undefined,
             }}
           />

@@ -20,6 +20,33 @@ export function accentStyle(hex) {
   return { '--team-accent': hex || '#6366f1', '--team-accent-rgb': hexToRgb(hex) };
 }
 
+/**
+ * Accept only same-origin uploaded assets for tournament/banner images.
+ * This avoids arbitrary protocols or cross-origin URLs being injected into CSS.
+ */
+export function normalizeUploadAssetUrl(value) {
+  if (typeof value !== 'string') return '';
+  const raw = value.trim();
+  if (!raw) return '';
+  if (raw.startsWith('/uploads/')) return raw;
+  if (typeof window === 'undefined') return '';
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    if (parsed.origin !== window.location.origin) return '';
+    if (!parsed.pathname.startsWith('/uploads/')) return '';
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '';
+  }
+}
+
+export function cssBackgroundImageUrl(value) {
+  const safe = normalizeUploadAssetUrl(value);
+  if (!safe) return undefined;
+  return `url("${encodeURI(safe).replace(/"/g, '%22')}")`;
+}
+
 export function initials(name = '') {
   return name
     .split(/\s+/)

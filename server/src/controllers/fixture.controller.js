@@ -6,12 +6,19 @@ import { Group } from '../models/Group.js';
 import { Tournament } from '../models/Tournament.js';
 import { Player } from '../models/Player.js';
 import { buildGroupFixtureSeeds } from '../services/roundRobin.js';
-import { recalcStandingsForFixture } from '../services/standingsService.js';
+import {
+  recalcAllStandings,
+  recalcStandingsForFixture,
+} from '../services/standingsService.js';
 import { recalcPlayerStats } from '../services/playerStatsService.js';
 import { advanceAfterResult } from '../services/knockoutService.js';
 import { recalculateTournament } from '../services/recalcService.js';
 import { recordAudit } from '../services/auditService.js';
-import { deriveCricketInnings, deriveLiveTicker } from '../services/matchDerive.js';
+import {
+  deriveCricketInnings,
+  deriveFootballGoals,
+  deriveLiveTicker,
+} from '../services/matchDerive.js';
 import {
   emitToFixture,
   emitToTournament,
@@ -131,6 +138,11 @@ export const generateGroupStage = asyncHandler(async (req, res) => {
 
   const created = await Fixture.insertMany(docs);
 
+  // Regeneration (overwrite) removes old completed fixtures; rebuild standings so
+  // no stale points/NRR/GD rows survive after the new schedule is created.
+  await recalcAllStandings(tournament._id);
+  emitToTournament(tournament._id, EVENTS.STANDINGS, { full: true });
+
   // Move the tournament into the group stage if it was still in setup.
   if (tournament.status === TOURNAMENT_STATUS.SETUP) {
     tournament.status = TOURNAMENT_STATUS.GROUP_STAGE;
@@ -227,14 +239,75 @@ function resolveResult(tournament, fixture, body) {
     throw ApiError.badRequest(`Expected a "${sport}" result payload`);
   }
 
-  let winner = sportResult.result?.winner ? String(sportResult.result.winner) : null;
+  const teamAId = String(fixture.teamA);
+  const teamBId = String(fixture.teamB);
+  const declaredWinner = sportResult.result?.winner ? String(sportResult.result.winner) : null;
+  let winner = declaredWinner;
+
+  if (sport === SPORTS.FOOTBALL) {
+    const { goalsA, goalsB } = deriveFootballGoals(sportResult, fixture.teamA, fixture.teamB);
+    const scoreWinner = goalsA === goalsB ? null : goalsA > goalsB ? teamAId : teamBId;
+    const penalties = sportResult.penalties;
+
+    if (scoreWinner) {
+      if (declaredWinner && declaredWinner !== scoreWinner) {
+        throw ApiError.badRequest('Declared winner does not match the goal score');
+      }
+      winner = scoreWinner;
+    } else if (fixture.stage === FIXTURE_STAGE.GROUP) {
+      if (declaredWinner) {
+        throw ApiError.badRequest('Group-stage football draws cannot declare a winner');
+      }
+      winner = null;
+    } else if (fixture.stage === FIXTURE_STAGE.KNOCKOUT && penalties) {
+      if (penalties.teamA === penalties.teamB) {
+        throw ApiError.badRequest('Penalty shootout cannot end level');
+      }
+      const penaltyWinner = penalties.teamA > penalties.teamB ? teamAId : teamBId;
+      if (declaredWinner && declaredWinner !== penaltyWinner) {
+        throw ApiError.badRequest('Declared winner does not match the penalty shootout');
+      }
+      winner = penaltyWinner;
+    } else if (declaredWinner) {
+      throw ApiError.badRequest('A tied football score requires penalties to decide the winner');
+    }
+  }
+
+  if (sport === SPORTS.CRICKET) {
+    const margin = sportResult.result?.margin;
+    const noResult = margin === 'noResult';
+    const innings = sportResult.innings ?? [];
+
+    if (noResult && declaredWinner) {
+      throw ApiError.badRequest('No-result cricket matches cannot declare a winner');
+    }
+
+    if (!noResult && innings.length) {
+      let runsA = 0;
+      let runsB = 0;
+      for (const rawInn of innings) {
+        const inn = deriveCricketInnings(rawInn);
+        if (String(inn.battingTeam) === teamAId) runsA += Number(inn.runs ?? 0);
+        else if (String(inn.battingTeam) === teamBId) runsB += Number(inn.runs ?? 0);
+      }
+      const scoreWinner = runsA === runsB ? null : runsA > runsB ? teamAId : teamBId;
+      if (scoreWinner) {
+        if (declaredWinner && declaredWinner !== scoreWinner) {
+          throw ApiError.badRequest('Declared winner does not match cricket innings totals');
+        }
+        winner = scoreWinner;
+      } else if (fixture.stage === FIXTURE_STAGE.GROUP && declaredWinner) {
+        throw ApiError.badRequest('Group-stage tied cricket scores cannot declare a winner');
+      }
+    }
+  }
 
   // Football knockout ties are decided on penalties.
   if (sport === SPORTS.FOOTBALL && !winner && fixture.stage === FIXTURE_STAGE.KNOCKOUT) {
     const pen = sportResult.penalties;
     if (pen) {
-      if (pen.teamA > pen.teamB) winner = String(fixture.teamA);
-      else if (pen.teamB > pen.teamA) winner = String(fixture.teamB);
+      if (pen.teamA > pen.teamB) winner = teamAId;
+      else if (pen.teamB > pen.teamA) winner = teamBId;
     }
   }
 
@@ -244,13 +317,13 @@ function resolveResult(tournament, fixture, body) {
     if (so) {
       const ra = Number(so.teamA?.runs ?? 0);
       const rb = Number(so.teamB?.runs ?? 0);
-      if (ra > rb) winner = String(fixture.teamA);
-      else if (rb > ra) winner = String(fixture.teamB);
+      if (ra > rb) winner = teamAId;
+      else if (rb > ra) winner = teamBId;
     }
   }
 
   // Validate the winner is actually one of the two teams.
-  if (winner && ![String(fixture.teamA), String(fixture.teamB)].includes(winner)) {
+  if (winner && ![teamAId, teamBId].includes(winner)) {
     throw ApiError.badRequest('Winner must be teamA or teamB');
   }
 

@@ -19,7 +19,7 @@ import Login from '@/pages/admin/Login';
 import Signup from '@/pages/admin/Signup';
 import ForgotPassword from '@/pages/admin/ForgotPassword';
 import ResetPassword from '@/pages/admin/ResetPassword';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedRoute, { SuperAdminRoute } from '@/components/ProtectedRoute';
 import AdminLayout from '@/pages/admin/AdminLayout';
 import Dashboard from '@/pages/admin/Dashboard';
 import AccessRequests from '@/pages/admin/AccessRequests';
@@ -75,8 +75,22 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
-        <Route path="users" element={<AccessRequests />} />
-        <Route path="tournament-access" element={<TournamentAccessRequests />} />
+        <Route
+          path="users"
+          element={(
+            <SuperAdminRoute>
+              <AccessRequests />
+            </SuperAdminRoute>
+          )}
+        />
+        <Route
+          path="tournament-access"
+          element={(
+            <SuperAdminRoute>
+              <TournamentAccessRequests />
+            </SuperAdminRoute>
+          )}
+        />
         <Route path="account" element={<AccountSettings />} />
         <Route path="new" element={<NewTournament />} />
         <Route path="t/:id" element={<AdminTournamentLayout />}>

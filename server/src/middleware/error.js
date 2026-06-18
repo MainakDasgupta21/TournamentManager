@@ -33,9 +33,10 @@ export function errorHandler(err, req, res, next) {
     // Duplicate key. Report only the field name(s); echoing back the conflicting
     // value (err.keyValue) would leak data (e.g. which emails are registered).
     statusCode = 409;
-    const field = Object.keys(err.keyValue ?? {}).join(', ');
+    const fields = Object.keys(err.keyValue ?? {});
+    const field = fields.join(', ');
     message = `Duplicate value for: ${field || 'unique field'}`;
-    console.warn('[duplicate-key]', err.keyValue);
+    console.warn('[duplicate-key]', fields);
   } else if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
