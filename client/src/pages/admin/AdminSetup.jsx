@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useUpdateTournament } from '@/hooks/queries';
 import { apiError } from '@/lib/api';
 import TournamentForm from '@/components/admin/TournamentForm';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default function AdminSetup() {
   const { tournament, tournamentId } = useOutletContext();
@@ -21,7 +22,11 @@ export default function AdminSetup() {
 
   return (
     <div>
-      <h2 className="mb-6 font-display text-3xl tracking-wide">Setup &amp; configuration</h2>
+      <PageHeader
+        title="Setup & configuration"
+        description="Update tournament metadata, rules, visual identity, and publication settings."
+        className="mb-6"
+      />
       <TournamentForm
         initial={tournament}
         onSubmit={onSubmit}

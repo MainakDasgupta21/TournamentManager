@@ -296,6 +296,11 @@ export default function AdminFixtures() {
 
   const fGroup = group.filter(matches);
   const fKnockout = knockout.filter(matches);
+  const hasFilters = status !== 'all' || query.trim() !== '';
+  const clearFilters = () => {
+    setStatus('all');
+    setQuery('');
+  };
 
   const toggleLive = async (fixture) => {
     const next = fixture.status === 'live' ? 'scheduled' : 'live';
@@ -397,12 +402,19 @@ export default function AdminFixtures() {
               </FilterChip>
             ))}
           </div>
-          <SearchInput
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search team, round, venue…"
-            className="w-full lg:w-72"
-          />
+          <div className="flex w-full items-center gap-2 lg:w-auto">
+            <SearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search team, round, venue…"
+              className="w-full lg:w-72"
+            />
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0">
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
       )}
 

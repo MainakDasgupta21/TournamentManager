@@ -143,19 +143,19 @@ export default function TeamPage() {
       </Link>
 
       <div
-        className="rounded-xl border border-border p-6"
+        className="rounded-xl border border-border p-5 sm:p-6"
         style={{ background: `linear-gradient(120deg, rgb(var(--team-accent-rgb) / 0.18), transparent)` }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-5">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-5">
             <TeamCrest team={team} size="lg" />
-            <div>
-              <h1 className="font-display text-5xl tracking-wide">{team.name}</h1>
+            <div className="min-w-0">
+              <h1 className="break-words font-display text-3xl tracking-wide sm:text-5xl">{team.name}</h1>
               <p className="text-muted-foreground">{team.shortCode}</p>
             </div>
           </div>
           {standing && (
-            <div className="text-right">
+            <div className="w-full text-left sm:w-auto sm:text-right">
               <p className="font-display text-4xl tracking-wide text-primary">#{standing.position}</p>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">{standing.group}</p>
             </div>
@@ -181,7 +181,7 @@ export default function TeamPage() {
         {form.length > 0 && (
           <div className="mt-5 flex items-center gap-2">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">Form</span>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {form.map((f, i) => <FormPill key={f.fixtureId ?? i} result={f.result} opponent={f.opponent} />)}
             </div>
           </div>

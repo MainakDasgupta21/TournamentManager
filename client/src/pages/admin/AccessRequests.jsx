@@ -60,7 +60,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
           </div>
 
           {pending ? (
-            <div className="mt-auto flex gap-2 pt-1">
+            <div className="mt-auto flex flex-col gap-2 pt-1 sm:flex-row">
               <Button
                 size="sm"
                 className="flex-1"
@@ -87,6 +87,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="w-full sm:w-auto"
                   disabled={busy}
                   aria-label={`Revoke access for ${user.name}`}
                   onClick={() => onReject(user)}
@@ -97,6 +98,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="w-full sm:w-auto"
                   disabled={busy}
                   aria-label={`Approve ${user.name}`}
                   onClick={() => onApprove(user)}

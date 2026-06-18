@@ -191,7 +191,7 @@ export default function StandingsPage() {
         title="Standings"
         description="Auto-ranked tables with form and qualification scenarios for every group."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
             <UpdatedIndicator updatedAt={dataUpdatedAt} isFetching={isFetching} />
             <Button
               variant="outline"

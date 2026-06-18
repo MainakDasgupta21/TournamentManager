@@ -99,10 +99,12 @@ export default function AdminTournamentLayout() {
           <Link to="/admin"><ArrowLeft /> All tournaments</Link>
         </Button>
 
-        <div className="surface-elevated flex flex-wrap items-center gap-3 rounded-2xl p-4 sm:p-5">
-          <h1 className="font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
-          <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
-          <TournamentStatusBadge status={t.status} />
+        <div className="surface-elevated rounded-2xl p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="min-w-0 break-words font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
+            <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
+            <TournamentStatusBadge status={t.status} />
+          </div>
         </div>
 
         <div className="surface-elevated max-w-3xl rounded-2xl p-6">
@@ -161,12 +163,14 @@ export default function AdminTournamentLayout() {
         <Link to="/admin"><ArrowLeft /> All tournaments</Link>
       </Button>
 
-      <div className="surface-elevated mb-6 flex flex-wrap items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <h1 className="font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
-        <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
-        <TournamentStatusBadge status={t.status} />
-        <div className="ml-auto flex items-center gap-2">
-          <NotificationBell linkTo={() => `/admin/t/${id}/fixtures`} />
+      <div className="surface-elevated mb-6 rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="min-w-0 break-words font-display text-3xl tracking-[-0.02em] sm:text-4xl">{t.name}</h1>
+          <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
+          <TournamentStatusBadge status={t.status} />
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell linkTo={() => `/admin/t/${id}/fixtures`} />
+          </div>
         </div>
       </div>
 

@@ -163,33 +163,55 @@ export default function Dashboard() {
 
       {isSuperAdmin && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
-          <Card className="surface-interactive">
-            <CardContent className="flex items-center justify-between gap-3 p-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending user requests</p>
-                <p className="font-display text-3xl tracking-[-0.02em]">{userPendingCount}</p>
-              </div>
-              <Button asChild size="sm">
-                <Link to="/admin/users">
-                  <ShieldCheck /> Review
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="surface-interactive">
-            <CardContent className="flex items-center justify-between gap-3 p-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending tournament access</p>
-                <p className="font-display text-3xl tracking-[-0.02em]">{tournamentPendingCount}</p>
-              </div>
-              <Button asChild size="sm">
-                <Link to="/admin/tournament-access">
-                  <UserCog /> Review
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {[
+            {
+              key: 'users',
+              title: 'Pending user requests',
+              count: userPendingCount,
+              href: '/admin/users',
+              icon: ShieldCheck,
+              pendingCta: 'Review users',
+              emptyCta: 'View users',
+            },
+            {
+              key: 'tournament-access',
+              title: 'Pending tournament access requests',
+              count: tournamentPendingCount,
+              href: '/admin/tournament-access',
+              icon: UserCog,
+              pendingCta: 'Review access',
+              emptyCta: 'View access',
+            },
+          ].map((item) => {
+            const hasPending = item.count > 0;
+            const Icon = item.icon;
+            return (
+              <Card key={item.key} className="surface-interactive border border-border/75">
+                <CardContent className="flex h-full flex-col justify-between gap-4 p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">{item.title}</p>
+                      <p className="font-display text-3xl tracking-[-0.02em] tabular-nums">{item.count}</p>
+                    </div>
+                    <span className="rounded-xl border border-border/70 bg-secondary/45 p-2 text-muted-foreground">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Badge variant={hasPending ? 'warning' : 'success'}>
+                      {hasPending ? `${item.count} pending` : 'No action needed'}
+                    </Badge>
+                    <Button asChild size="sm" variant={hasPending ? 'default' : 'outline'}>
+                      <Link to={item.href}>
+                        {hasPending ? item.pendingCta : item.emptyCta}
+                        <ArrowRight />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

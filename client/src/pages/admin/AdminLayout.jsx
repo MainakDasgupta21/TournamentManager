@@ -67,6 +67,12 @@ export default function AdminLayout() {
 
   return (
     <div className="relative min-h-screen">
+      <a
+        href="#admin-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-[var(--shadow-soft)]"
+      >
+        Skip to main content
+      </a>
       <div className="pointer-events-none fixed inset-x-0 top-[-16rem] z-0 h-[30rem] bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.22),transparent_62%)]" />
       <header className="sticky top-0 z-40 border-b border-border/65 bg-background/78 backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -128,7 +134,7 @@ export default function AdminLayout() {
           </div>
         )}
       </header>
-      <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main id="admin-main-content" className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <PageTransition transitionKey={sectionKey}>
           <Outlet />
         </PageTransition>

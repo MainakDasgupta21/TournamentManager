@@ -16,6 +16,7 @@ import ImageUpload from '@/components/admin/ImageUpload';
 import FormationEditor from '@/components/admin/FormationEditor';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -429,7 +430,10 @@ export default function AdminTeams() {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-3xl tracking-wide">Teams</h2>
+      <PageHeader
+        title="Teams"
+        description="Build and manage squads, rosters, and optional football default formations."
+      />
 
       <Card>
         <CardHeader><CardTitle>Add a team</CardTitle></CardHeader>
@@ -446,23 +450,25 @@ export default function AdminTeams() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
             <Card key={team._id}>
-              <CardContent className="flex items-center gap-3 p-4">
+              <CardContent className="flex flex-wrap items-center gap-3 p-4">
                 <TeamCrest team={team} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{team.name}</p>
                   <p className="text-xs text-muted-foreground">{team.shortCode}{team.seed ? ` · seed ${team.seed}` : ''}</p>
                 </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="secondary" size="sm"><Shirt /> Roster</Button>
-                  </DialogTrigger>
-                  <RosterDialog tournamentId={tournamentId} team={team} sport={tournament.sportType} />
-                </Dialog>
-                <Tooltip label="Delete team">
-                  <Button variant="ghost" size="icon" onClick={() => onRemoveTeam(team)} aria-label="Delete team">
-                    <Trash2 className="text-destructive" />
-                  </Button>
-                </Tooltip>
+                <div className="ml-auto flex items-center gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="secondary" size="sm"><Shirt /> Roster</Button>
+                    </DialogTrigger>
+                    <RosterDialog tournamentId={tournamentId} team={team} sport={tournament.sportType} />
+                  </Dialog>
+                  <Tooltip label="Delete team">
+                    <Button variant="ghost" size="icon" onClick={() => onRemoveTeam(team)} aria-label="Delete team">
+                      <Trash2 className="text-destructive" />
+                    </Button>
+                  </Tooltip>
+                </div>
               </CardContent>
             </Card>
           ))}

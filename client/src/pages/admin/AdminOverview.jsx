@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FixtureItem from '@/components/FixtureItem';
 import { EmptyState, ErrorState, Spinner, Skeleton, SkeletonGrid } from '@/components/ui/misc';
+import { PageHeader } from '@/components/ui/page-header';
 
 const POTM_NONE = '__none__';
 
@@ -102,6 +103,10 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Overview"
+        description="Track progress, review upcoming fixtures, and assign Player of the Tournament."
+      />
       <div className="grid gap-4 sm:grid-cols-3">
         <Card><CardContent className="flex items-center gap-3 p-5">
           <CheckCircle2 className="h-8 w-8 text-[hsl(var(--success))]" />

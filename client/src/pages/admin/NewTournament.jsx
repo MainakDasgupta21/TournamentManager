@@ -6,6 +6,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { apiError } from '@/lib/api';
 import TournamentForm from '@/components/admin/TournamentForm';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default function NewTournament() {
   const navigate = useNavigate();
@@ -24,10 +25,16 @@ export default function NewTournament() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Button asChild variant="ghost" size="sm" className="mb-4">
-        <Link to="/admin"><ArrowLeft /> Back</Link>
-      </Button>
-      <h1 className="mb-6 font-display text-4xl tracking-wide">New tournament</h1>
+      <PageHeader
+        title="New tournament"
+        description="Create a new competition with the right sport, format, and schedule settings."
+        className="mb-6"
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/admin"><ArrowLeft /> Back to dashboard</Link>
+          </Button>
+        }
+      />
       <TournamentForm onSubmit={onSubmit} submitting={create.isPending} submitLabel="Create tournament" />
     </div>
   );

@@ -21,7 +21,7 @@ function Brand({ onClick }) {
       <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-br from-primary via-primary/90 to-accent shadow-[var(--shadow-soft)]">
         <Trophy className="h-5 w-5 text-white" />
       </div>
-      <span className="font-display text-2xl leading-none tracking-[-0.02em] text-gradient-brand">TourneyOps</span>
+      <span className="font-display text-xl leading-none tracking-[-0.02em] text-gradient-brand sm:text-2xl">TourneyOps</span>
     </Link>
   );
 }
@@ -42,10 +42,16 @@ export default function PublicLayout() {
 
   return (
     <div className="relative flex min-h-screen flex-col">
+      <a
+        href="#public-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-[var(--shadow-soft)]"
+      >
+        Skip to main content
+      </a>
       <div className="pointer-events-none fixed inset-x-0 top-[-18rem] z-0 h-[32rem] bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.2),transparent_62%)]" />
       <header className="sticky top-0 z-40 border-b border-border/65 bg-background/78 backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 lg:gap-8">
             <Brand />
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => (
@@ -135,7 +141,7 @@ export default function PublicLayout() {
         </SheetContent>
       </Sheet>
 
-      <main className="relative z-10 flex-1">
+      <main id="public-main-content" className="relative z-10 flex-1">
         <PageTransition transitionKey={sectionKey}>
           <Outlet />
         </PageTransition>

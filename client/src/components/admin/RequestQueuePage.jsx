@@ -91,6 +91,11 @@ export default function RequestQueuePage({
                   ))}
                 </SelectContent>
               </Select>
+              {hasSearch && onClearSearch && (
+                <Button variant="ghost" size="sm" onClick={onClearSearch} className="shrink-0">
+                  {clearSearchLabel}
+                </Button>
+              )}
             </div>
           </div>
         }

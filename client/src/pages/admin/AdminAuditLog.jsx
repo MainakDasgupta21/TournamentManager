@@ -16,6 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { EmptyState, ErrorState, Spinner, Skeleton } from '@/components/ui/misc';
+import { PageHeader } from '@/components/ui/page-header';
 import { formatDateTime } from '@/lib/format';
 
 const ENTITY_LABELS = {
@@ -156,12 +157,12 @@ export default function AdminAuditLog() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-display text-3xl tracking-wide">
-          <History className="h-6 w-6" /> Audit log
-        </h2>
-        <RecalculateButton tournamentId={tournamentId} />
-      </div>
+      <PageHeader
+        icon={History}
+        title="Audit log"
+        description="Review every scoring and configuration change, then recalculate standings and stats when required."
+        actions={<RecalculateButton tournamentId={tournamentId} />}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select
@@ -177,7 +178,7 @@ export default function AdminAuditLog() {
           </SelectContent>
         </Select>
         {isFetching && <Spinner className="h-4 w-4" />}
-        <p className="ml-auto text-sm text-muted-foreground">
+        <p className="w-full text-sm text-muted-foreground sm:ml-auto sm:w-auto">
           {data?.total ?? 0} change{(data?.total ?? 0) === 1 ? '' : 's'} recorded
         </p>
       </div>

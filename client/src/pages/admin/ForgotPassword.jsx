@@ -33,7 +33,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-grid px-4">
+    <div className="relative flex min-h-screen items-start justify-center bg-grid px-4 py-10 sm:items-center">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-background" />
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="relative w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center justify-center gap-2">

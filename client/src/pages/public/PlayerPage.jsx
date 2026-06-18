@@ -194,17 +194,17 @@ export default function PlayerPage() {
         </Link>
       )}
       <div
-        className="flex items-center gap-5 rounded-xl border border-border p-6"
+        className="flex flex-col items-start gap-4 rounded-xl border border-border p-5 sm:flex-row sm:items-center sm:gap-5 sm:p-6"
         style={{ background: 'linear-gradient(120deg, rgb(var(--team-accent-rgb) / 0.18), transparent)' }}
       >
         <TeamCrest team={player.team} size="lg" />
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {player.role && <Badge variant="outline" className="uppercase">{player.role}</Badge>}
             <PlayerCategoryBadge category={player.category} />
             {player.jerseyNumber != null && <span className="text-sm text-muted-foreground">#{player.jerseyNumber}</span>}
           </div>
-          <h1 className="font-display text-4xl tracking-wide sm:text-5xl">{player.name}</h1>
+          <h1 className="break-words font-display text-3xl tracking-wide sm:text-5xl">{player.name}</h1>
           {player.team && (
             <Link to={`/t/${tournamentId}/teams/${player.team._id}`} className="text-muted-foreground hover:text-primary hover:underline">
               {player.team.name}

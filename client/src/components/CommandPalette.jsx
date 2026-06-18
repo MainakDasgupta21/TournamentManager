@@ -119,6 +119,20 @@ export default function CommandPalette() {
     setActive((a) => Math.min(a, Math.max(0, results.length - 1)));
   }, [results.length]);
 
+  useEffect(() => {
+    if (!open) return;
+    const container = listRef.current;
+    if (!container) return;
+    const activeNode = container.querySelector(`[data-cmd-index="${active}"]`);
+    if (activeNode?.scrollIntoView) {
+      activeNode.scrollIntoView({ block: 'nearest' });
+    }
+  }, [active, open, results.length]);
+
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
+
   const select = (item) => {
     if (!item) return;
     setOpen(false);
@@ -163,7 +177,7 @@ export default function CommandPalette() {
             />
             <kbd className="hidden rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline">Esc</kbd>
           </div>
-          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-thin p-2">
+          <div ref={listRef} role="listbox" aria-label="Search results" className="min-h-0 flex-1 overflow-y-auto scrollbar-thin p-2">
             {results.length ? (
               results.map((item, i) => {
                 const Icon = item.icon;
@@ -171,6 +185,9 @@ export default function CommandPalette() {
                   <button
                     key={item.key}
                     type="button"
+                    role="option"
+                    aria-selected={i === active}
+                    data-cmd-index={i}
                     onClick={() => select(item)}
                     onMouseMove={() => setActive(i)}
                     className={cn(

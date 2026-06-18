@@ -74,7 +74,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
 
           <div className="mt-auto">
             {tournament._id ? (
-              <Button asChild size="sm" variant="ghost" className="px-0 text-primary">
+              <Button asChild size="sm" variant="ghost" className="w-full justify-start px-0 text-primary sm:w-auto">
                 <Link to={`/admin/t/${tournament._id}`}>Open tournament</Link>
               </Button>
             ) : (
@@ -83,7 +83,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
           </div>
 
           {pending && (
-            <div className="mt-auto flex gap-2 pt-1">
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
               <Button
                 size="sm"
                 className="flex-1"

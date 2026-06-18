@@ -145,8 +145,8 @@ export default function PublicTournamentLayout() {
             <span className="truncate font-medium text-foreground/80">{t.name}</span>
           </nav>
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{sportLabel(t.sportType)}</Badge>
                 <TournamentStatusBadge status={t.status} />
@@ -181,7 +181,7 @@ export default function PublicTournamentLayout() {
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex w-full items-center justify-end gap-2 lg:w-auto lg:justify-start">
               <NotificationBell linkTo={(fixtureId) => `/t/${id}/match/${fixtureId}`} />
               <Button variant="outline" size="sm" onClick={onShare}>
                 <Share2 /> <span className="hidden sm:inline">Share</span>

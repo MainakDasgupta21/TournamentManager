@@ -117,8 +117,8 @@ export default function AdminGroups() {
 
       <Card>
         <CardHeader><CardTitle>Create a group manually</CardTitle></CardHeader>
-        <CardContent className="flex gap-2">
-          <Input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Group A" className="max-w-xs" />
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Group A" className="w-full max-w-xs" />
           <Button onClick={addGroup} disabled={create.isPending}><Plus /> Add group</Button>
         </CardContent>
       </Card>

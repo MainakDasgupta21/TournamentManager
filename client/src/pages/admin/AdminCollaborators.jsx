@@ -36,10 +36,10 @@ function Avatar({ name }) {
 
 function PersonRow({ person, badge, action }) {
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="flex items-start gap-3 py-3 sm:items-center">
       <Avatar name={person.name} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <p className="truncate text-sm font-semibold">{person.name}</p>
           {badge}
         </div>
@@ -101,7 +101,7 @@ function AddCollaborator({ tournamentId, assign }) {
         </div>
 
         {showResults && (
-          <div className="rounded-lg border border-border">
+          <div className="max-h-80 overflow-y-auto rounded-lg border border-border scrollbar-thin">
             {isFetching && !candidates.length ? (
               <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> Searching…

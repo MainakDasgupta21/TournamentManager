@@ -97,6 +97,7 @@ export default function Home() {
     });
     return list;
   }, [all, query, filter, sort]);
+  const hasActiveFilters = query.trim() !== '' || filter !== 'all' || sort !== 'newest';
 
   return (
     <div>
@@ -110,7 +111,7 @@ export default function Home() {
             <span className="mb-4 inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="mr-1.5 h-3 w-3" /> Live scores · Standings · Brackets
             </span>
-            <h1 className="mx-auto max-w-4xl font-display text-6xl leading-[0.95] tracking-wide sm:text-8xl">
+            <h1 className="mx-auto max-w-4xl font-display text-4xl leading-[0.95] tracking-wide sm:text-6xl lg:text-8xl">
               Follow every match,
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> live</span>
             </h1>
@@ -147,7 +148,14 @@ export default function Home() {
       {/* Listing */}
       <section id="tournaments" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-12 sm:px-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-display text-3xl tracking-wide">Tournaments</h2>
+          <div>
+            <h2 className="font-display text-3xl tracking-wide">Tournaments</h2>
+            {!isLoading && !isError && all.length > 0 && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Showing {visible.length} of {all.length}
+              </p>
+            )}
+          </div>
           <SearchInput
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -163,23 +171,38 @@ export default function Home() {
                 {f.label}
               </FilterChip>
             ))}
-            <div className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
-              <button
-                type="button"
-                onClick={() => setSort('newest')}
-                className={cn('rounded-md px-2 py-1', sort === 'newest' ? 'text-foreground' : 'hover:text-foreground')}
-              >
-                Newest
-              </button>
-              <span className="text-border">·</span>
-              <button
-                type="button"
-                onClick={() => setSort('name')}
-                className={cn('rounded-md px-2 py-1', sort === 'name' ? 'text-foreground' : 'hover:text-foreground')}
-              >
-                A–Z
-              </button>
+            <div className="w-full sm:ml-auto sm:w-auto">
+              <div className="flex items-center justify-start gap-1 text-sm text-muted-foreground sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSort('newest')}
+                  className={cn('rounded-md px-2 py-1', sort === 'newest' ? 'text-foreground' : 'hover:text-foreground')}
+                >
+                  Newest
+                </button>
+                <span className="text-border">·</span>
+                <button
+                  type="button"
+                  onClick={() => setSort('name')}
+                  className={cn('rounded-md px-2 py-1', sort === 'name' ? 'text-foreground' : 'hover:text-foreground')}
+                >
+                  A–Z
+                </button>
+              </div>
             </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setFilter('all');
+                  setSort('newest');
+                }}
+                className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground sm:ml-2"
+              >
+                Clear
+              </button>
+            )}
           </div>
         )}
 

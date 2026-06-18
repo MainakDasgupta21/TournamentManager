@@ -126,12 +126,12 @@ function AdjustPanel({ tournamentId, bracket, teams }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {firstRound.matchups.map((m, i) => (
-          <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-border/70 bg-card/55 p-2 sm:gap-3">
+          <div key={i} className="grid grid-cols-1 items-center gap-2 rounded-xl border border-border/70 bg-card/55 p-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-3">
             <Select value={m.slotA?._id || m.slotA || ''} onValueChange={(v) => change(i, 'A', v)}>
               <SelectTrigger className="h-9 min-w-0"><SelectValue placeholder={m.slotALabel || 'TBD'}>{teamName(m.slotA?._id || m.slotA)}</SelectValue></SelectTrigger>
               <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
             </Select>
-            <span className="shrink-0 text-xs font-bold text-muted-foreground">vs</span>
+            <span className="shrink-0 text-center text-xs font-bold text-muted-foreground">vs</span>
             <Select value={m.slotB?._id || m.slotB || ''} onValueChange={(v) => change(i, 'B', v)}>
               <SelectTrigger className="h-9 min-w-0"><SelectValue placeholder={m.slotBLabel || 'TBD'}>{teamName(m.slotB?._id || m.slotB)}</SelectValue></SelectTrigger>
               <SelectContent>{teams.map((t) => <SelectItem key={t._id} value={t._id}>{t.name}</SelectItem>)}</SelectContent>
@@ -179,7 +179,7 @@ export default function AdminKnockout() {
           hasBracket ? (
             <>
               <Badge variant={locked ? 'success' : 'warning'}>{locked ? 'Locked' : 'Draft'}</Badge>
-              {!locked && <Button onClick={onLock} disabled={lock.isPending}><Lock /> Lock bracket</Button>}
+              {!locked && <Button onClick={onLock} disabled={lock.isPending} className="w-full sm:w-auto"><Lock /> Lock bracket</Button>}
             </>
           ) : null
         }

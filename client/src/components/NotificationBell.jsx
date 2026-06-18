@@ -31,10 +31,10 @@ export default function NotificationBell({ linkTo }) {
     markAllRead(); // viewing the feed clears the unread count
     const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDown);
+    document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
     };
   }, [open, markAllRead]);
@@ -46,7 +46,7 @@ export default function NotificationBell({ linkTo }) {
         size="icon"
         className="relative shadow-[var(--shadow-soft)]"
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >

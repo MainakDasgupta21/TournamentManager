@@ -6,6 +6,7 @@ import { useFixtures, useGroups, useTeams } from '@/hooks/queries';
 import FixtureItem from '@/components/FixtureItem';
 import MatchDetail from '@/components/MatchDetail';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EmptyState, ErrorState, Skeleton, FilterChip, SearchInput } from '@/components/ui/misc';
 import { formatDate, formatDateTime, resultSummary } from '@/lib/format';
@@ -100,6 +101,23 @@ export default function FixturesPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Fixtures"
+        description="Track every match by status, stage, date, team, and venue."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            title="Exports the current filtered list as CSV"
+            disabled={!filtered.length}
+            onClick={() => exportFixtures(filtered, tournament.name)}
+          >
+            <Download /> <span className="hidden sm:inline">Export CSV</span>
+          </Button>
+        }
+      />
+
       <div className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
@@ -146,16 +164,6 @@ export default function FixturesPage() {
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full sm:ml-auto sm:w-auto"
-            title="Exports the current filtered list as CSV"
-            disabled={!filtered.length}
-            onClick={() => exportFixtures(filtered, tournament.name)}
-          >
-            <Download /> Export CSV
-          </Button>
         </div>
       </div>
 

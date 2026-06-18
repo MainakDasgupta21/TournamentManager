@@ -223,7 +223,7 @@ function PlayerOfTournament({ tournamentId, potm, sport }) {
   return (
     <Card className="overflow-hidden border-primary/30">
       <CardContent
-        className="flex items-center gap-4 p-5"
+        className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-4"
         style={{ background: 'linear-gradient(120deg, rgb(var(--team-accent-rgb) / 0.18), transparent)' }}
       >
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-400/15">
@@ -231,10 +231,10 @@ function PlayerOfTournament({ tournamentId, potm, sport }) {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Player of the Tournament</p>
-          <Link to={`/t/${tournamentId}/players/${p._id}`} className="font-display text-2xl tracking-wide hover:underline">
+          <Link to={`/t/${tournamentId}/players/${p._id}`} className="break-words font-display text-2xl tracking-wide hover:underline">
             {p.name}
           </Link>
-          <p className="text-sm text-muted-foreground">{p.team?.name} · {line}</p>
+          <p className="break-words text-sm text-muted-foreground">{p.team?.name} · {line}</p>
         </div>
         <TeamCrest team={p.team} size="lg" />
       </CardContent>
@@ -301,28 +301,30 @@ export default function LeaderboardsPage() {
       <BestEleven tournamentId={tournamentId} xi={xi} />
 
       {/* Category selector */}
-      <div className="flex flex-wrap gap-2">
-        {boards.map((b) => (
-          <button
-            key={b.key}
-            type="button"
-            onClick={() => setActive(b.key)}
-            aria-pressed={b.key === active}
-            className={cn(
-              'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              b.key === active
-                ? 'border-primary/40 bg-primary text-primary-foreground shadow-[var(--shadow-soft)]'
-                : 'border-border/80 bg-card/55 text-muted-foreground hover:border-primary/35 hover:bg-secondary/65 hover:text-foreground'
-            )}
-          >
-            {b.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1 scrollbar-thin">
+        <div className="flex w-max gap-2">
+          {boards.map((b) => (
+            <button
+              key={b.key}
+              type="button"
+              onClick={() => setActive(b.key)}
+              aria-pressed={b.key === active}
+              className={cn(
+                'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                b.key === active
+                  ? 'border-primary/40 bg-primary text-primary-foreground shadow-[var(--shadow-soft)]'
+                  : 'border-border/80 bg-card/55 text-muted-foreground hover:border-primary/35 hover:bg-secondary/65 hover:text-foreground'
+              )}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Card>
         <CardContent className="p-3 sm:p-6">
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="h-5 w-1.5 rounded-full" style={{ background: activeBoard.accent }} />
             <h2 className="font-display text-2xl tracking-[-0.02em]">{activeBoard.label}</h2>
             {activeBoard.tag && <Badge variant="secondary">{activeBoard.tag}</Badge>}

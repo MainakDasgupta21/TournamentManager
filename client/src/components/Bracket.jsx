@@ -106,7 +106,7 @@ function ChampionBanner({ champion }) {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(var(--warning))]">Champions</p>
           <div className="mt-1 flex items-center gap-3">
             <TeamCrest team={champion} size="md" />
-            <h3 className="truncate font-display text-4xl tracking-[-0.02em]">{champion.name}</h3>
+            <h3 className="truncate font-display text-3xl tracking-[-0.02em] sm:text-4xl">{champion.name}</h3>
           </div>
         </div>
       </div>

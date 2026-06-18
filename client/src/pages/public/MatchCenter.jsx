@@ -61,7 +61,7 @@ function TeamHeader({ team, placeholder, score, sub, isWinner }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
       {team ? <TeamCrest team={team} size="lg" /> : <div className="h-12 w-12 rounded-xl bg-secondary" />}
-      <p className={cn('text-sm font-medium', isWinner && 'text-[hsl(var(--success))]')}>
+      <p className={cn('break-words text-sm font-medium', isWinner && 'text-[hsl(var(--success))]')}>
         {team?.name || placeholder || 'TBD'}
       </p>
       {score != null && <p className="font-display text-4xl tabular-nums leading-none">{score}</p>}

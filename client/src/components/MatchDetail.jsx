@@ -276,7 +276,7 @@ export default function MatchDetail({ fixture, sport, live, tournamentId, onOpen
 
   return (
     <Sheet open={!!fixture} onOpenChange={(o) => !o && onOpenChange(false)}>
-      <SheetContent side="right" className="w-full max-w-md p-0">
+      <SheetContent side="right" className="w-full max-w-lg p-0">
         <SheetHeader>
           <div className="flex items-center justify-between gap-3 pr-8">
             <SheetTitle className="truncate text-sm font-medium text-muted-foreground">
