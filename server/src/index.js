@@ -3,9 +3,11 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { initSocket } from './socket/index.js';
+import { ensureSeedSuperAdmin } from './services/superAdminService.js';
 
 async function bootstrap() {
   await connectDB();
+  await ensureSeedSuperAdmin({ log: true });
 
   const app = createApp();
   const server = http.createServer(app);
