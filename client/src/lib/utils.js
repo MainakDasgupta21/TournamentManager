@@ -1,6 +1,8 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 /** Merge conditional + conflicting Tailwind classes (shadcn convention). */
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -21,21 +23,39 @@ export function accentStyle(hex) {
 }
 
 /**
- * Accept only same-origin uploaded assets for tournament/banner images.
- * This avoids arbitrary protocols or cross-origin URLs being injected into CSS.
+ * Accept only uploaded assets from this app (same-origin) or the configured API
+ * origin. This blocks arbitrary protocols/origins being injected into CSS while
+ * still supporting split frontend/API deployments.
  */
 export function normalizeUploadAssetUrl(value) {
   if (typeof value !== 'string') return '';
   const raw = value.trim();
   if (!raw) return '';
-  if (raw.startsWith('/uploads/')) return raw;
+  if (raw.startsWith('/uploads/')) {
+    if (typeof window === 'undefined') return raw;
+    let apiOrigin = window.location.origin;
+    try {
+      apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+    } catch {
+      apiOrigin = window.location.origin;
+    }
+    return apiOrigin === window.location.origin ? raw : `${apiOrigin}${raw}`;
+  }
   if (typeof window === 'undefined') return '';
   try {
+    let apiOrigin = window.location.origin;
+    try {
+      apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+    } catch {
+      apiOrigin = window.location.origin;
+    }
     const parsed = new URL(raw, window.location.origin);
     if (!['http:', 'https:'].includes(parsed.protocol)) return '';
-    if (parsed.origin !== window.location.origin) return '';
+    const trustedOrigins = new Set([window.location.origin, apiOrigin]);
+    if (!trustedOrigins.has(parsed.origin)) return '';
     if (!parsed.pathname.startsWith('/uploads/')) return '';
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    return parsed.origin === window.location.origin ? path : `${parsed.origin}${path}`;
   } catch {
     return '';
   }
