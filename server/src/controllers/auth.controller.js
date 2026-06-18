@@ -19,9 +19,24 @@ import {
 
 const REFRESH_COOKIE = 'tms_refresh';
 const RESET_TTL_MINUTES = 30;
+const SUPER_ADMIN_FIXED_PASSWORD_MESSAGE =
+  'Super admin password is fixed by system configuration and cannot be changed here.';
 
 /** Hash a reset token before storing/looking it up (never store the raw token). */
 const hashResetToken = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
+
+/**
+ * Compare a candidate password to the configured fixed super-admin password.
+ * Uses a timing-safe compare when lengths match.
+ */
+function matchesFixedSuperAdminPassword(candidate) {
+  const expected = env.seed.password ?? '';
+  if (typeof candidate !== 'string') return false;
+  const actualBuf = Buffer.from(candidate);
+  const expectedBuf = Buffer.from(expected);
+  if (actualBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(actualBuf, expectedBuf);
+}
 
 /** Only accounts that could actually sign in are eligible for a reset link. */
 function canSignIn(user) {
@@ -130,7 +145,10 @@ export const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email }).select('+passwordHash');
   if (!user || !user.isActive) throw ApiError.unauthorized('Invalid credentials');
 
-  const ok = await user.comparePassword(password);
+  const ok =
+    user.role === USER_ROLES.SUPER_ADMIN
+      ? matchesFixedSuperAdminPassword(password)
+      : await user.comparePassword(password);
   if (!ok) throw ApiError.unauthorized('Invalid credentials');
 
   // Only approved organisers (and super admins) may enter the admin panel.
@@ -208,6 +226,9 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user._id).select('+passwordHash');
   if (!user) throw ApiError.unauthorized('Account not found');
+  if (user.role === USER_ROLES.SUPER_ADMIN) {
+    throw ApiError.forbidden(SUPER_ADMIN_FIXED_PASSWORD_MESSAGE);
+  }
 
   const ok = await user.comparePassword(currentPassword);
   // 400 (not 401): the session is valid, the supplied field is wrong. A 401 here
@@ -238,7 +259,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   };
 
   const user = await User.findOne({ email });
-  if (!canSignIn(user)) return sendSuccess(res, generic);
+  if (!canSignIn(user) || user.role === USER_ROLES.SUPER_ADMIN) return sendSuccess(res, generic);
 
   const rawToken = crypto.randomBytes(32).toString('hex');
   user.resetPasswordTokenHash = hashResetToken(rawToken);
@@ -271,6 +292,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }).select('+resetPasswordTokenHash +resetPasswordExpires');
 
   if (!user) throw ApiError.badRequest('This password reset link is invalid or has expired.');
+  if (user.role === USER_ROLES.SUPER_ADMIN) {
+    throw ApiError.forbidden(SUPER_ADMIN_FIXED_PASSWORD_MESSAGE);
+  }
 
   await user.setPassword(newPassword);
   user.resetPasswordTokenHash = null;

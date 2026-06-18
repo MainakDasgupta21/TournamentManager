@@ -49,6 +49,10 @@ Created by the seed scripts (override via the `SEED_*` vars in `server/.env`):
 | Super admin | `admin@tms.local` | `admin12345` | `npm run seed` |
 | Demo organiser | `demo@tms.local` | `demo12345` | `npm run seed:demo` |
 
+Super Admin uses a fixed configured password (`SEED_ADMIN_PASSWORD`) and cannot
+change/reset it from the app. To rotate it, update `server/.env` and run
+`npm run seed`.
+
 ## Demo data
 
 `npm run seed:demo` is **idempotent** — every run wipes and recreates only the

@@ -26,6 +26,7 @@ function validate({ currentPassword, newPassword, confirmPassword }) {
 export default function AccountSettings() {
   const user = useAuth((s) => s.user);
   const changePassword = useAuth((s) => s.changePassword);
+  const isSuperAdmin = user?.role === 'superadmin';
   const [form, setForm] = useState(BLANK);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -77,64 +78,81 @@ export default function AccountSettings() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4" /> Change password
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="currentPassword">Current password</Label>
-              <PasswordInput
-                id="currentPassword"
-                autoComplete="current-password"
-                value={form.currentPassword}
-                onChange={(e) => set({ currentPassword: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="newPassword">New password</Label>
-              <PasswordInput
-                id="newPassword"
-                autoComplete="new-password"
-                value={form.newPassword}
-                onChange={(e) => set({ newPassword: e.target.value })}
-                minLength={MIN_LENGTH}
-                required
-              />
-              <p className="text-xs text-muted-foreground">At least {MIN_LENGTH} characters.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword">Confirm new password</Label>
-              <PasswordInput
-                id="confirmPassword"
-                autoComplete="new-password"
-                value={form.confirmPassword}
-                onChange={(e) => set({ confirmPassword: e.target.value })}
-                required
-              />
-            </div>
-
-            {error && (
-              <p role="alert" className="text-sm font-medium text-destructive">
-                {error}
-              </p>
-            )}
-
-            <p className="flex items-start gap-1.5 rounded-md bg-secondary/50 p-3 text-xs text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Changing your password signs out every other device. This session stays active.
+      {isSuperAdmin ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" /> Fixed super admin password
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="rounded-md bg-secondary/50 p-3 text-sm text-muted-foreground">
+              Super Admin password is fixed by system configuration and cannot be changed from the
+              app. Update <code className="text-foreground">SEED_ADMIN_PASSWORD</code> on the
+              server and run <code className="text-foreground">npm run seed</code> to rotate it.
             </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4" /> Change password
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <PasswordInput
+                  id="currentPassword"
+                  autoComplete="current-password"
+                  value={form.currentPassword}
+                  onChange={(e) => set({ currentPassword: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="newPassword">New password</Label>
+                <PasswordInput
+                  id="newPassword"
+                  autoComplete="new-password"
+                  value={form.newPassword}
+                  onChange={(e) => set({ newPassword: e.target.value })}
+                  minLength={MIN_LENGTH}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">At least {MIN_LENGTH} characters.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword">Confirm new password</Label>
+                <PasswordInput
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={form.confirmPassword}
+                  onChange={(e) => set({ confirmPassword: e.target.value })}
+                  required
+                />
+              </div>
 
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              <KeyRound /> {loading ? 'Updating…' : 'Update password'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {error && (
+                <p role="alert" className="text-sm font-medium text-destructive">
+                  {error}
+                </p>
+              )}
+
+              <p className="flex items-start gap-1.5 rounded-md bg-secondary/50 p-3 text-xs text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Changing your password signs out every other device. This session stays active.
+              </p>
+
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                <KeyRound /> {loading ? 'Updating…' : 'Update password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
