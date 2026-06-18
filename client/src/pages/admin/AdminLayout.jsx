@@ -1,5 +1,5 @@
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Trophy, LogOut, ExternalLink, ShieldCheck, Search, KeyRound, UserCog } from 'lucide-react';
+import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Trophy, LogOut, ExternalLink, ShieldCheck, Search, KeyRound, UserCog, LayoutDashboard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/auth';
 import { useUsers, useTournamentAccessRequests } from '@/hooks/queries';
@@ -9,7 +9,32 @@ import { Tooltip } from '@/components/ui/tooltip';
 import PageTransition from '@/components/layout/PageTransition';
 import CommandPalette, { openCommandPalette } from '@/components/CommandPalette';
 import ThemeToggle from '@/components/ThemeToggle';
-import { shortcutModifier } from '@/lib/utils';
+import { cn, shortcutModifier } from '@/lib/utils';
+
+function SuperAdminNavLink({ to, label, icon: Icon, end = false, badge }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors',
+          isActive
+            ? 'border-primary/40 bg-primary/12 text-foreground'
+            : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-secondary/60 hover:text-foreground'
+        )
+      }
+    >
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
+      {badge > 0 && (
+        <Badge variant="warning" className="h-5 min-w-5 px-1.5">
+          {badge}
+        </Badge>
+      )}
+    </NavLink>
+  );
+}
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -61,30 +86,6 @@ export default function AdminLayout() {
               </Button>
             </Tooltip>
             <ThemeToggle />
-            {isSuperAdmin && (
-              <>
-                <Button asChild variant="ghost" size="sm" className="relative">
-                  <Link to="/admin/users">
-                    <ShieldCheck /> <span className="hidden sm:inline">User requests</span>
-                    {userPendingCount > 0 && (
-                      <Badge variant="warning" className="ml-0.5 px-1.5 py-0">
-                        {userPendingCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm" className="relative">
-                  <Link to="/admin/tournament-access">
-                    <UserCog /> <span className="hidden sm:inline">Tournament access</span>
-                    {tournamentPendingCount > 0 && (
-                      <Badge variant="warning" className="ml-0.5 px-1.5 py-0">
-                        {tournamentPendingCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </Button>
-              </>
-            )}
             <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
               <Link to="/" target="_blank"><ExternalLink /> Public site</Link>
             </Button>
@@ -109,6 +110,23 @@ export default function AdminLayout() {
             </Button>
           </div>
         </div>
+        {isSuperAdmin && (
+          <div className="border-t border-border/60">
+            <nav
+              className="mx-auto flex h-12 max-w-7xl items-center gap-2 overflow-x-auto px-4 scrollbar-thin sm:px-6"
+              aria-label="Super admin navigation"
+            >
+              <SuperAdminNavLink to="/admin" end icon={LayoutDashboard} label="Overview" />
+              <SuperAdminNavLink to="/admin/users" icon={ShieldCheck} label="User requests" badge={userPendingCount} />
+              <SuperAdminNavLink
+                to="/admin/tournament-access"
+                icon={UserCog}
+                label="Tournament access"
+                badge={tournamentPendingCount}
+              />
+            </nav>
+          </div>
+        )}
       </header>
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <PageTransition transitionKey={sectionKey}>

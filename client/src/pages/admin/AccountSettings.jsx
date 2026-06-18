@@ -87,9 +87,9 @@ export default function AccountSettings() {
           </CardHeader>
           <CardContent>
             <p className="rounded-md bg-secondary/50 p-3 text-sm text-muted-foreground">
-              Super Admin password is fixed by system configuration and cannot be changed from the
-              app. Update <code className="text-foreground">SEED_ADMIN_PASSWORD</code> on the
-              server and run <code className="text-foreground">npm run seed</code> to rotate it.
+              Super admin passwords are managed by your platform owner for security. If you need a
+              credential rotation, contact the maintainer and sign in again after they confirm the
+              update.
             </p>
           </CardContent>
         </Card>

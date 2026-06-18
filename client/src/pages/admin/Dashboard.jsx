@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Settings2, Trophy, Trash2, ArrowRight, Search, Send } from 'lucide-react';
+import { Plus, Settings2, Trophy, Trash2, ArrowRight, Search, Send, ShieldCheck, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTournamentList, useDeleteTournament, useRequestTournamentAccess } from '@/hooks/queries';
+import {
+  useTournamentList,
+  useDeleteTournament,
+  useRequestTournamentAccess,
+  useUsers,
+  useTournamentAccessRequests,
+} from '@/hooks/queries';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiError } from '@/lib/api';
+import { useAuth } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +55,8 @@ export default function Dashboard() {
   const del = useDeleteTournament();
   const requestAccess = useRequestTournamentAccess();
   const confirm = useConfirm();
+  const user = useAuth((s) => s.user);
+  const isSuperAdmin = user?.role === 'superadmin';
   useDocumentTitle('Dashboard');
 
   const [query, setQuery] = useState('');
@@ -56,12 +65,20 @@ export default function Dashboard() {
   const [sport, setSport] = useState('all');
   const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
+  const scopeInitialized = useRef(false);
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const defaultScope = isSuperAdmin ? 'all' : 'mine';
 
-  const hasFilters = debouncedQuery !== '' || status !== 'all' || sport !== 'all' || scope !== 'mine';
+  useEffect(() => {
+    if (scopeInitialized.current || !user) return;
+    if (isSuperAdmin) setScope('all');
+    scopeInitialized.current = true;
+  }, [isSuperAdmin, user]);
+
+  const hasFilters = debouncedQuery !== '' || status !== 'all' || sport !== 'all' || scope !== defaultScope;
   const clearFilters = () => {
     setQuery('');
-    setScope('mine');
+    setScope(defaultScope);
     setStatus('all');
     setSport('all');
   };
@@ -81,11 +98,21 @@ export default function Dashboard() {
     ...(debouncedQuery ? { q: debouncedQuery } : {}),
   };
   const { data, isLoading, isError, isFetching, refetch } = useTournamentList(filters);
+  const { data: pendingUsersData } = useUsers(
+    { status: 'pending' },
+    { enabled: isSuperAdmin, refetchInterval: 60_000 }
+  );
+  const { data: pendingTournamentAccessData } = useTournamentAccessRequests(
+    { status: 'pending' },
+    { enabled: isSuperAdmin, refetchInterval: 60_000 }
+  );
 
   const visible = data?.tournaments ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
   const showToolbar = !isLoading && !isError;
+  const userPendingCount = pendingUsersData?.pendingCount ?? 0;
+  const tournamentPendingCount = pendingTournamentAccessData?.pendingCount ?? 0;
 
   // Clamp the page if results shrank beneath us (e.g. after a delete).
   useEffect(() => {
@@ -133,6 +160,38 @@ export default function Dashboard() {
         }
       />
 
+      {isSuperAdmin && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <Card className="surface-interactive">
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Pending user requests</p>
+                <p className="font-display text-3xl tracking-[-0.02em]">{userPendingCount}</p>
+              </div>
+              <Button asChild size="sm">
+                <Link to="/admin/users">
+                  <ShieldCheck /> Review
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="surface-interactive">
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Pending tournament access</p>
+                <p className="font-display text-3xl tracking-[-0.02em]">{tournamentPendingCount}</p>
+              </div>
+              <Button asChild size="sm">
+                <Link to="/admin/tournament-access">
+                  <UserCog /> Review
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Toolbar — hidden until there's something to filter. */}
       {showToolbar && (
         <div className="mb-6 space-y-4">
@@ -141,6 +200,7 @@ export default function Dashboard() {
               <SearchInput
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search tournaments"
                 placeholder="Search your tournaments…"
                 className="w-full sm:w-72"
               />

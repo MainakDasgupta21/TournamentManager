@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Search, Trophy, Home, LayoutDashboard, LogIn, CornerDownLeft } from 'lucide-react';
+import {
+  Search,
+  Trophy,
+  Home,
+  LayoutDashboard,
+  LogIn,
+  CornerDownLeft,
+  ShieldCheck,
+  UserCog,
+} from 'lucide-react';
 import { useTournaments } from '@/hooks/queries';
 import { useAuth } from '@/store/auth';
 import { sportLabel } from '@/lib/format';
@@ -22,6 +31,8 @@ export default function CommandPalette() {
   const [active, setActive] = useState(0);
   const navigate = useNavigate();
   const authed = useAuth((s) => s.status === 'authenticated');
+  const role = useAuth((s) => s.user?.role);
+  const isSuperAdmin = role === 'superadmin';
   const { data: tournaments } = useTournaments();
   const listRef = useRef(null);
 
@@ -52,10 +63,43 @@ export default function CommandPalette() {
     const q = query.trim().toLowerCase();
     const pages = [
       { key: 'home', label: 'All tournaments', sub: 'Home', icon: Home, run: () => navigate('/') },
-      authed
-        ? { key: 'admin', label: 'Admin dashboard', sub: 'Manage tournaments', icon: LayoutDashboard, run: () => navigate('/admin') }
-        : { key: 'login', label: 'Admin sign in', sub: 'Organisers', icon: LogIn, run: () => navigate('/login') },
-    ].filter((p) => !q || p.label.toLowerCase().includes(q));
+    ];
+    if (authed) {
+      pages.push({
+        key: 'admin',
+        label: 'Admin dashboard',
+        sub: 'Manage tournaments',
+        icon: LayoutDashboard,
+        run: () => navigate('/admin'),
+      });
+      if (isSuperAdmin) {
+        pages.push(
+          {
+            key: 'users',
+            label: 'User requests',
+            sub: 'Super admin',
+            icon: ShieldCheck,
+            run: () => navigate('/admin/users'),
+          },
+          {
+            key: 'tournament-access',
+            label: 'Tournament access',
+            sub: 'Super admin',
+            icon: UserCog,
+            run: () => navigate('/admin/tournament-access'),
+          }
+        );
+      }
+    } else {
+      pages.push({
+        key: 'login',
+        label: 'Admin sign in',
+        sub: 'Organisers',
+        icon: LogIn,
+        run: () => navigate('/login'),
+      });
+    }
+    const filteredPages = pages.filter((p) => !q || p.label.toLowerCase().includes(q));
 
     const matches = (tournaments ?? [])
       .filter((t) => !q || t.name.toLowerCase().includes(q))
@@ -68,8 +112,8 @@ export default function CommandPalette() {
         run: () => navigate(`/t/${t._id}`),
       }));
 
-    return [...pages, ...matches];
-  }, [query, tournaments, authed, navigate]);
+    return [...filteredPages, ...matches];
+  }, [query, tournaments, authed, isSuperAdmin, navigate]);
 
   useEffect(() => {
     setActive((a) => Math.min(a, Math.max(0, results.length - 1)));
@@ -113,6 +157,7 @@ export default function CommandPalette() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKeyDown}
+              aria-label="Search commands and tournaments"
               placeholder="Search tournaments or jump to…"
               className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/90"
             />

@@ -12,11 +12,17 @@ import { formatDate, sportLabel } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { EmptyState, ErrorState, SkeletonGrid, TeamCrest, SearchInput, Pager, Spinner } from '@/components/ui/misc';
-import { useConfirm } from '@/components/ui/confirm';
+import { TeamCrest } from '@/components/ui/misc';
+import RequestQueuePage from '@/components/admin/RequestQueuePage';
+import ReviewActionDialog from '@/components/admin/ReviewActionDialog';
 
 const PAGE_SIZE = 12;
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Declined' },
+  { value: 'all', label: 'All requests' },
+];
 
 const STATUS_BADGE = {
   pending: { label: 'Pending', variant: 'warning' },
@@ -37,7 +43,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
           <div className="flex items-start gap-3">
             <TeamCrest team={{ name: requester.name ?? 'Requester', primaryColor: '#6366f1' }} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{requester.name ?? 'Unknown requester'}</p>
+              <h2 className="truncate text-base font-semibold">{requester.name ?? 'Unknown requester'}</h2>
               <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
                 <Mail className="h-3.5 w-3.5 shrink-0" /> {requester.email ?? 'No email'}
               </p>
@@ -78,7 +84,13 @@ function RequestCard({ request, onApprove, onReject, busy }) {
 
           {pending && (
             <div className="mt-auto flex gap-2 pt-1">
-              <Button size="sm" className="flex-1" disabled={busy} onClick={() => onApprove(request)}>
+              <Button
+                size="sm"
+                className="flex-1"
+                disabled={busy}
+                aria-label={`Approve ${requester.name ?? 'requester'}`}
+                onClick={() => onApprove(request)}
+              >
                 <Check /> Approve
               </Button>
               <Button
@@ -86,6 +98,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
                 variant="outline"
                 className="flex-1"
                 disabled={busy}
+                aria-label={`Decline ${requester.name ?? 'requester'}`}
                 onClick={() => onReject(request)}
               >
                 <X /> Decline
@@ -117,12 +130,13 @@ export default function TournamentAccessRequests() {
   };
   const { data, isLoading, isError, isFetching, refetch } = useTournamentAccessRequests(filters);
   const update = useReviewTournamentAccessRequest();
-  const confirm = useConfirm();
+  const [reviewDraft, setReviewDraft] = useState(null);
   useDocumentTitle('Tournament access requests · Admin');
 
   const requests = data?.requests ?? [];
   const pages = data?.pages ?? 1;
   const hasSearch = debouncedQuery !== '';
+  const activeMutationId = update.isPending ? update.variables?.id : null;
 
   useEffect(() => {
     if (!isFetching && page > pages) setPage(pages);
@@ -130,116 +144,99 @@ export default function TournamentAccessRequests() {
 
   if (!isSuperAdmin) return <Navigate to="/admin" replace />;
 
-  const onApprove = async (request) => {
-    const requester = request.requestedBy?.name ?? 'this organiser';
-    const tournament = request.tournamentId?.name ?? 'this tournament';
-    const ok = await confirm({
-      title: `Approve ${requester}?`,
-      description: `They will be able to manage ${tournament}.`,
-      confirmLabel: 'Approve',
-      variant: 'default',
-    });
-    if (!ok) return;
+  const onApprove = (request) => setReviewDraft({ mode: 'approve', request });
+  const onReject = (request) => setReviewDraft({ mode: 'reject', request });
+
+  const onSubmitReview = async (note) => {
+    if (!reviewDraft?.request) return;
+    const request = reviewDraft.request;
+    const status = reviewDraft.mode === 'approve' ? 'approved' : 'rejected';
     try {
       await update.mutateAsync({
         id: request._id,
-        status: 'approved',
+        status,
+        note: note || undefined,
         tournamentId: request.tournamentId?._id,
       });
-      toast.success('Tournament access approved');
+      toast.success(status === 'approved' ? 'Tournament access approved' : 'Tournament access declined');
+      setReviewDraft(null);
     } catch (e) {
       toast.error(apiError(e));
     }
   };
 
-  const onReject = async (request) => {
-    const requester = request.requestedBy?.name ?? 'this organiser';
-    const ok = await confirm({
-      title: `Decline ${requester}?`,
-      description: 'They will not be granted management access to this tournament.',
-      confirmLabel: 'Decline request',
-    });
-    if (!ok) return;
-    try {
-      await update.mutateAsync({
-        id: request._id,
-        status: 'rejected',
-        tournamentId: request.tournamentId?._id,
-      });
-      toast.success('Request declined');
-    } catch (e) {
-      toast.error(apiError(e));
-    }
-  };
+  const selectedRequest = reviewDraft?.request;
+  const selectedMode = reviewDraft?.mode ?? 'approve';
+  const selectedRequester = selectedRequest?.requestedBy?.name ?? 'this organiser';
+  const selectedTournament = selectedRequest?.tournamentId?.name ?? 'this tournament';
+  const reviewTitle = selectedMode === 'approve'
+    ? `Approve ${selectedRequester}?`
+    : `Decline ${selectedRequester}?`;
+  const reviewDescription = selectedMode === 'approve'
+    ? `They will be able to manage ${selectedTournament}.`
+    : 'They will not be granted management access to this tournament.';
+  const reviewConfirmLabel = selectedMode === 'approve' ? 'Approve' : 'Decline request';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-4xl tracking-wide">
-            <ShieldCheck className="h-7 w-7 text-primary" /> Tournament access requests
-          </h1>
-          <p className="text-muted-foreground">Approve or decline per-tournament admin access</p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2">
-            <SearchInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search requester or tournament…"
-              className="w-full sm:w-72"
-            />
-            {isFetching && <Spinner className="h-4 w-4 shrink-0" />}
-          </div>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Declined</SelectItem>
-              <SelectItem value="all">All requests</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <>
+      <RequestQueuePage
+        icon={ShieldCheck}
+        title="Tournament access requests"
+        description="Approve or decline per-tournament admin access"
+        query={query}
+        onQueryChange={(e) => setQuery(e.target.value)}
+        searchPlaceholder="Search requester or tournament…"
+        searchLabel="Search tournament access requests"
+        searchWidthClassName="sm:w-72"
+        status={status}
+        onStatusChange={setStatus}
+        statusOptions={STATUS_OPTIONS}
+        statusLabel="Filter tournament requests by status"
+        isFetching={isFetching}
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={refetch}
+        errorTitle="Couldn't load tournament access requests"
+        errorDescription="There was a problem reaching the server."
+        isEmpty={!requests.length}
+        hasSearch={hasSearch}
+        emptyIcon={hasSearch ? Search : ShieldCheck}
+        emptyTitle={hasSearch ? 'No matches' : status === 'pending' ? 'No pending requests' : 'Nothing here'}
+        emptyDescription={
+          hasSearch
+            ? 'No requests match your search. Try a different requester or tournament name.'
+            : status === 'pending'
+              ? 'New tournament access requests will appear here for review.'
+              : 'No requests match this filter.'
+        }
+        onClearSearch={() => setQuery('')}
+        page={data?.page ?? page}
+        pages={pages}
+        onPage={setPage}
+      >
+        {requests.map((r) => (
+          <RequestCard
+            key={r._id}
+            request={r}
+            onApprove={onApprove}
+            onReject={onReject}
+            busy={activeMutationId === r._id}
+          />
+        ))}
+      </RequestQueuePage>
 
-      {isLoading ? (
-        <SkeletonGrid count={3} media={false} />
-      ) : isError ? (
-        <ErrorState
-          title="Couldn't load tournament access requests"
-          description="There was a problem reaching the server."
-          onRetry={refetch}
-        />
-      ) : !requests.length ? (
-        <EmptyState
-          icon={hasSearch ? Search : ShieldCheck}
-          title={hasSearch ? 'No matches' : status === 'pending' ? 'No pending requests' : 'Nothing here'}
-          description={
-            hasSearch
-              ? 'No requests match your search. Try a different requester or tournament name.'
-              : status === 'pending'
-                ? 'New tournament access requests will appear here for review.'
-                : 'No requests match this filter.'
-          }
-          action={hasSearch ? <Button variant="outline" onClick={() => setQuery('')}>Clear search</Button> : undefined}
-        />
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {requests.map((r) => (
-              <RequestCard
-                key={r._id}
-                request={r}
-                onApprove={onApprove}
-                onReject={onReject}
-                busy={update.isPending}
-              />
-            ))}
-          </div>
-          <Pager page={data?.page ?? page} pages={pages} onPage={setPage} className="mt-8" />
-        </>
-      )}
-    </div>
+      <ReviewActionDialog
+        open={!!reviewDraft}
+        onOpenChange={(open) => {
+          if (!open && !update.isPending) setReviewDraft(null);
+        }}
+        mode={selectedMode}
+        title={reviewTitle}
+        description={reviewDescription}
+        confirmLabel={reviewConfirmLabel}
+        isSubmitting={update.isPending}
+        onConfirm={onSubmitReview}
+      />
+    </>
   );
 }

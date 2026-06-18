@@ -12,11 +12,13 @@ import { useAuth } from '@/store/auth';
 import { apiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/misc';
+import { PageHeader } from '@/components/ui/page-header';
 
 /** Coloured initials avatar derived from a name. */
 function Avatar({ name }) {
@@ -86,8 +88,10 @@ function AddCollaborator({ tournamentId, assign }) {
           except adding or removing other collaborators.
         </p>
         <div className="relative">
+          <Label htmlFor="collaborator-search" className="sr-only">Search organisers</Label>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="collaborator-search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search organisers…"
@@ -159,12 +163,11 @@ export default function AdminCollaborators() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-3xl tracking-wide">Collaborators</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          People who can manage this tournament. Super admins control collaborator access.
-        </p>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Collaborators"
+        description="People who can manage this tournament. Super admins control collaborator access."
+      />
 
       {isError ? (
         <ErrorState

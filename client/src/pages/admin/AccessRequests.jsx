@@ -11,12 +11,18 @@ import { apiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { EmptyState, ErrorState, SkeletonGrid, TeamCrest, SearchInput, Pager, Spinner } from '@/components/ui/misc';
-import { useConfirm } from '@/components/ui/confirm';
+import { TeamCrest } from '@/components/ui/misc';
 import { formatDate } from '@/lib/format';
+import RequestQueuePage from '@/components/admin/RequestQueuePage';
+import ReviewActionDialog from '@/components/admin/ReviewActionDialog';
 
 const PAGE_SIZE = 12;
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Declined' },
+  { value: 'all', label: 'All accounts' },
+];
 
 const STATUS_BADGE = {
   pending: { label: 'Pending', variant: 'warning' },
@@ -34,7 +40,7 @@ function RequestCard({ user, onApprove, onReject, busy }) {
           <div className="flex items-start gap-3">
             <TeamCrest team={{ name: user.name, primaryColor: '#6366f1' }} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{user.name}</p>
+              <h2 className="truncate text-base font-semibold">{user.name}</h2>
               <p className="flex items-center gap-1.5 truncate text-sm text-muted-foreground">
                 <Mail className="h-3.5 w-3.5 shrink-0" /> {user.email}
               </p>
@@ -55,21 +61,46 @@ function RequestCard({ user, onApprove, onReject, busy }) {
 
           {pending ? (
             <div className="mt-auto flex gap-2 pt-1">
-              <Button size="sm" className="flex-1" disabled={busy} onClick={() => onApprove(user)}>
+              <Button
+                size="sm"
+                className="flex-1"
+                disabled={busy}
+                aria-label={`Approve ${user.name}`}
+                onClick={() => onApprove(user)}
+              >
                 <Check /> Approve
               </Button>
-              <Button size="sm" variant="outline" className="flex-1" disabled={busy} onClick={() => onReject(user)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                disabled={busy}
+                aria-label={`Decline ${user.name}`}
+                onClick={() => onReject(user)}
+              >
                 <X /> Decline
               </Button>
             </div>
           ) : (
             <div className="mt-auto pt-1">
               {user.approvalStatus === 'approved' ? (
-                <Button size="sm" variant="ghost" disabled={busy} onClick={() => onReject(user)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  aria-label={`Revoke access for ${user.name}`}
+                  onClick={() => onReject(user)}
+                >
                   <X /> Revoke access
                 </Button>
               ) : (
-                <Button size="sm" variant="secondary" disabled={busy} onClick={() => onApprove(user)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  aria-label={`Approve ${user.name}`}
+                  onClick={() => onApprove(user)}
+                >
                   <Check /> Approve anyway
                 </Button>
               )}
@@ -99,12 +130,13 @@ export default function AccessRequests() {
   };
   const { data, isLoading, isError, isFetching, refetch } = useUsers(filters);
   const update = useUpdateApproval();
-  const confirm = useConfirm();
+  const [reviewDraft, setReviewDraft] = useState(null);
   useDocumentTitle('Access requests · Admin');
 
   const users = data?.users ?? [];
   const pages = data?.pages ?? 1;
   const hasSearch = debouncedQuery !== '';
+  const activeMutationId = update.isPending ? update.variables?.id : null;
 
   // Clamp the page if the result set shrank (e.g. after approving the last item).
   useEffect(() => {
@@ -114,108 +146,118 @@ export default function AccessRequests() {
   // Organisers must never reach this maintainer-only screen.
   if (!isSuperAdmin) return <Navigate to="/admin" replace />;
 
-  const onApprove = async (user) => {
-    const ok = await confirm({
-      title: `Approve ${user.name}?`,
-      description: `${user.email} will be able to sign in and manage tournaments.`,
-      confirmLabel: 'Approve',
-      variant: 'default',
-    });
-    if (!ok) return;
+  const onApprove = (user) => setReviewDraft({ mode: 'approve', user });
+  const onReject = (user) => setReviewDraft({ mode: 'reject', user });
+
+  const onSubmitReview = async (note) => {
+    if (!reviewDraft?.user) return;
+    const user = reviewDraft.user;
+    const isApprove = reviewDraft.mode === 'approve';
+    const status = isApprove ? 'approved' : 'rejected';
+    const isRevoke = !isApprove && user.approvalStatus === 'approved';
+
     try {
-      await update.mutateAsync({ id: user._id, status: 'approved' });
-      toast.success(`${user.name} approved`);
+      await update.mutateAsync({
+        id: user._id,
+        status,
+        note: note || undefined,
+      });
+      toast.success(
+        isApprove
+          ? `${user.name} approved`
+          : isRevoke
+            ? `Access revoked for ${user.name}`
+            : `Request declined for ${user.name}`
+      );
+      setReviewDraft(null);
     } catch (e) {
       toast.error(apiError(e));
     }
   };
 
-  const onReject = async (user) => {
-    const reapproved = user.approvalStatus === 'approved';
-    const ok = await confirm({
-      title: reapproved ? `Revoke access for ${user.name}?` : `Decline ${user.name}?`,
-      description: reapproved
+  const selectedUser = reviewDraft?.user;
+  const selectedMode = reviewDraft?.mode ?? 'approve';
+  const isApproveAction = selectedMode === 'approve';
+  const isRevokeAction = !isApproveAction && selectedUser?.approvalStatus === 'approved';
+  const reviewTitle = selectedUser
+    ? isApproveAction
+      ? `Approve ${selectedUser.name}?`
+      : isRevokeAction
+        ? `Revoke access for ${selectedUser.name}?`
+        : `Decline ${selectedUser.name}?`
+    : '';
+  const reviewDescription = selectedUser
+    ? isApproveAction
+      ? `${selectedUser.email} will be able to sign in and manage tournaments.`
+      : isRevokeAction
         ? 'They will be signed out and blocked from the admin panel.'
-        : 'They will not be able to sign in. You can approve them later.',
-      confirmLabel: reapproved ? 'Revoke access' : 'Decline request',
-    });
-    if (!ok) return;
-    try {
-      await update.mutateAsync({ id: user._id, status: 'rejected' });
-      toast.success(reapproved ? 'Access revoked' : 'Request declined');
-    } catch (e) {
-      toast.error(apiError(e));
-    }
-  };
+        : 'They will not be able to sign in. You can approve them later.'
+    : '';
+  const reviewConfirmLabel = isApproveAction
+    ? 'Approve'
+    : isRevokeAction
+      ? 'Revoke access'
+      : 'Decline request';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-4xl tracking-wide">
-            <ShieldCheck className="h-7 w-7 text-primary" /> Access requests
-          </h1>
-          <p className="text-muted-foreground">Approve or decline organiser accounts</p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2">
-            <SearchInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name or email…"
-              className="w-full sm:w-64"
-            />
-            {isFetching && <Spinner className="h-4 w-4 shrink-0" />}
-          </div>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Declined</SelectItem>
-              <SelectItem value="all">All accounts</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <>
+      <RequestQueuePage
+        icon={ShieldCheck}
+        title="Access requests"
+        description="Approve or decline organiser accounts"
+        query={query}
+        onQueryChange={(e) => setQuery(e.target.value)}
+        searchPlaceholder="Search name or email…"
+        searchLabel="Search organiser requests"
+        status={status}
+        onStatusChange={setStatus}
+        statusOptions={STATUS_OPTIONS}
+        statusLabel="Filter organiser requests by status"
+        isFetching={isFetching}
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={refetch}
+        errorTitle="Couldn't load access requests"
+        errorDescription="There was a problem reaching the server."
+        isEmpty={!users.length}
+        hasSearch={hasSearch}
+        emptyIcon={hasSearch ? Search : ShieldCheck}
+        emptyTitle={hasSearch ? 'No matches' : status === 'pending' ? 'No pending requests' : 'Nothing here'}
+        emptyDescription={
+          hasSearch
+            ? 'No accounts match your search. Try a different name or email.'
+            : status === 'pending'
+              ? 'New organiser sign-ups will appear here for review.'
+              : 'No accounts match this filter.'
+        }
+        onClearSearch={() => setQuery('')}
+        page={data?.page ?? page}
+        pages={pages}
+        onPage={setPage}
+      >
+        {users.map((u) => (
+          <RequestCard
+            key={u._id}
+            user={u}
+            onApprove={onApprove}
+            onReject={onReject}
+            busy={activeMutationId === u._id}
+          />
+        ))}
+      </RequestQueuePage>
 
-      {isLoading ? (
-        <SkeletonGrid count={3} media={false} />
-      ) : isError ? (
-        <ErrorState
-          title="Couldn't load access requests"
-          description="There was a problem reaching the server."
-          onRetry={refetch}
-        />
-      ) : !users.length ? (
-        <EmptyState
-          icon={hasSearch ? Search : ShieldCheck}
-          title={hasSearch ? 'No matches' : status === 'pending' ? 'No pending requests' : 'Nothing here'}
-          description={
-            hasSearch
-              ? 'No accounts match your search. Try a different name or email.'
-              : status === 'pending'
-                ? 'New organiser sign-ups will appear here for review.'
-                : 'No accounts match this filter.'
-          }
-          action={hasSearch ? <Button variant="outline" onClick={() => setQuery('')}>Clear search</Button> : undefined}
-        />
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {users.map((u) => (
-              <RequestCard
-                key={u._id}
-                user={u}
-                onApprove={onApprove}
-                onReject={onReject}
-                busy={update.isPending}
-              />
-            ))}
-          </div>
-          <Pager page={data?.page ?? page} pages={pages} onPage={setPage} className="mt-8" />
-        </>
-      )}
-    </div>
+      <ReviewActionDialog
+        open={!!reviewDraft}
+        onOpenChange={(open) => {
+          if (!open && !update.isPending) setReviewDraft(null);
+        }}
+        mode={selectedMode}
+        title={reviewTitle}
+        description={reviewDescription}
+        confirmLabel={reviewConfirmLabel}
+        isSubmitting={update.isPending}
+        onConfirm={onSubmitReview}
+      />
+    </>
   );
 }

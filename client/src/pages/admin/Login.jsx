@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, LogIn } from 'lucide-react';
+import { Trophy, LogIn, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/store/auth';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -49,7 +49,7 @@ export default function Login() {
         <Card>
           <CardContent className="p-6">
             <h1 className="text-xl font-semibold">Admin sign in</h1>
-            <p className="mb-6 text-sm text-muted-foreground">Manage your tournaments</p>
+            <p className="mb-6 text-sm text-muted-foreground">Manage tournaments and review admin access</p>
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -63,6 +63,10 @@ export default function Login() {
                   </Link>
                 </div>
                 <PasswordInput id="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <p className="flex items-start gap-1.5 rounded-md bg-secondary/45 p-2.5 text-xs text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  Password reset is available for organiser accounts. Super admin passwords are managed by server configuration.
+                </p>
               </div>
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 <LogIn /> {loading ? 'Signing in…' : 'Sign in'}
@@ -82,8 +86,8 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  Super Admin credentials are set by server configuration. Contact the site
-                  maintainer if you do not have the current credentials.
+                  Super admin credentials are set by server configuration and cannot be reset from this screen.
+                  Contact the site maintainer if credentials have changed.
                 </>
               )}
             </p>
