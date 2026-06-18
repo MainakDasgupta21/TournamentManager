@@ -67,18 +67,16 @@ export default function AccountSettings() {
       <PageHeader title="Account" description="Manage your sign-in details" className="mb-8" />
 
       <Card className="mb-6">
-        <CardContent className="p-5 text-sm sm:p-6">
-          <div className="flex flex-col gap-3 rounded-xl border border-border/65 bg-card/45 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="font-medium">{user?.name}</p>
-              <p className="flex items-center gap-1.5 break-all text-muted-foreground">
-                <Mail className="h-3.5 w-3.5 shrink-0" /> {user?.email}
-              </p>
-            </div>
-            <Badge variant="secondary" className="self-start sm:self-auto">
-              {user?.role === 'superadmin' ? 'Super Admin' : 'Tournament Admin'}
-            </Badge>
+        <CardContent className="flex flex-col gap-3 p-6 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-base font-semibold">{user?.name}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 break-all text-muted-foreground">
+              <Mail className="h-3.5 w-3.5 shrink-0" /> {user?.email}
+            </p>
           </div>
+          <Badge variant="secondary" className="self-start sm:shrink-0 sm:self-auto">
+            {user?.role === 'superadmin' ? 'Super Admin' : 'Tournament Admin'}
+          </Badge>
         </CardContent>
       </Card>
 

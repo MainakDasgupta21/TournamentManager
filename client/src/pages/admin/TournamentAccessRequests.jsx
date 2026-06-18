@@ -51,7 +51,7 @@ function RequestCard({ request, onApprove, onReject, busy }) {
             <Badge variant={status.variant} className="ml-auto shrink-0">{status.label}</Badge>
           </div>
 
-          <div className="space-y-1.5 rounded-xl border border-border/65 bg-card/45 px-3 py-2.5 text-sm text-muted-foreground">
+          <div className="space-y-1.5 text-sm text-muted-foreground">
             <p className="flex items-center gap-1.5">
               <Trophy className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{tournament.name ?? 'Tournament removed'}</span>
