@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CRICKET_ROLES, FOOTBALL_POSITIONS, PLAYER_CATEGORIES } from '../constants.js';
-import { hexColor, nonEmptyString, objectId } from './common.js';
+import { hexColor, imageAssetUrl, nonEmptyString, objectId } from './common.js';
 import { footballFormationSchema } from './formation.schema.js';
 
 export const createTeamSchema = z.object({
@@ -11,7 +11,7 @@ export const createTeamSchema = z.object({
       .trim()
       .toUpperCase()
       .regex(/^[A-Z0-9]{2,4}$/, 'Short code must be 2-4 letters/digits'),
-    logo: z.string().url().optional().or(z.literal('')),
+    logo: imageAssetUrl.optional(),
     primaryColor: hexColor.default('#3b82f6'),
     groupId: objectId.optional().nullable(),
   }),

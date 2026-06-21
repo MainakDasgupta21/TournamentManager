@@ -82,6 +82,17 @@ export const env = {
     redisUrl: process.env.RATE_LIMIT_REDIS_URL ?? '',
   },
 
+  // Image storage. When Cloudinary is configured uploads go to the CDN; otherwise
+  // the upload service falls back to local-disk storage (fine for local dev).
+  // The Cloudinary SDK also auto-reads a single `CLOUDINARY_URL` env var.
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
+    apiKey: process.env.CLOUDINARY_API_KEY ?? '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+    url: process.env.CLOUDINARY_URL ?? '',
+    folder: process.env.CLOUDINARY_FOLDER ?? 'tourneyops',
+  },
+
   seed: {
     name: process.env.SEED_ADMIN_NAME ?? 'Super Admin',
     email: process.env.SEED_ADMIN_EMAIL ?? 'admin@tms.local',

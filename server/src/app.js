@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { notFound, errorHandler } from './middleware/error.js';
-import { UPLOAD_DIR } from './middleware/upload.js';
+import { UPLOAD_DIR } from './services/imageStorage.js';
 import routes from './routes/index.js';
 
 export function createApp() {

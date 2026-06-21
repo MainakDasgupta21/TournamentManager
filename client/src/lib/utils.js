@@ -51,6 +51,10 @@ export function normalizeUploadAssetUrl(value) {
     }
     const parsed = new URL(raw, window.location.origin);
     if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    // Cloudinary CDN assets are served over https from *.cloudinary.com.
+    if (parsed.protocol === 'https:' && /(^|\.)cloudinary\.com$/i.test(parsed.hostname)) {
+      return parsed.href;
+    }
     const trustedOrigins = new Set([window.location.origin, apiOrigin]);
     if (!trustedOrigins.has(parsed.origin)) return '';
     if (!parsed.pathname.startsWith('/uploads/')) return '';

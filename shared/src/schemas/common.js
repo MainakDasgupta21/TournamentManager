@@ -20,6 +20,19 @@ export const hexColor = z
 
 export const nonEmptyString = z.string().trim().min(1);
 
+/**
+ * An image asset reference: either an absolute http(s) URL (e.g. a Cloudinary
+ * CDN link) or an app-relative upload path (`/uploads/...`) used by the
+ * local-disk storage fallback. Empty string clears the field.
+ */
+export const imageAssetUrl = z
+  .string()
+  .trim()
+  .refine(
+    (v) => v === '' || /^https?:\/\/.+/i.test(v) || v.startsWith('/uploads/'),
+    'Must be an image URL or an /uploads path'
+  );
+
 /** Pagination query shared by list endpoints. */
 export const paginationQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),

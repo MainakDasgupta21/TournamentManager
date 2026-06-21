@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { initSocket } from './socket/index.js';
 import { ensureSeedSuperAdmin } from './services/superAdminService.js';
+import { imageStorageMode } from './services/imageStorage.js';
 
 async function bootstrap() {
   await connectDB();
@@ -16,6 +17,7 @@ async function bootstrap() {
   server.listen(env.port, () => {
     console.log(`[server] listening on http://localhost:${env.port} (${env.nodeEnv})`);
     console.log(`[server] socket.io ready; CORS origins: ${env.clientOrigins.join(', ')}`);
+    console.log(`[server] image storage: ${imageStorageMode()}`);
   });
 
   // Graceful shutdown so in-flight requests/connections close cleanly.

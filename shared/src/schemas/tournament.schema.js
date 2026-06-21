@@ -6,7 +6,7 @@ import {
   TIEBREAKERS,
   TOURNAMENT_STATUS_VALUES,
 } from '../constants.js';
-import { hexColor, isoDate, nonEmptyString, objectId } from './common.js';
+import { hexColor, imageAssetUrl, isoDate, nonEmptyString, objectId } from './common.js';
 
 export const bonusPointRuleSchema = z.object({
   enabled: z.boolean().default(false),
@@ -46,8 +46,8 @@ export const groupSettingsSchema = z.object({
 const baseTournamentFields = {
   name: nonEmptyString.max(160),
   sportType: z.enum(SPORT_VALUES),
-  logo: z.string().url().optional().or(z.literal('')),
-  bannerImage: z.string().url().optional().or(z.literal('')),
+  logo: imageAssetUrl.optional(),
+  bannerImage: imageAssetUrl.optional(),
   startDate: isoDate,
   endDate: isoDate,
   venues: z.array(nonEmptyString.max(160)).default([]),
