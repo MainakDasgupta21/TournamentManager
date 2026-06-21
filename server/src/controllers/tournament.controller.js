@@ -95,7 +95,8 @@ export const listTournaments = asyncHandler(async (req, res) => {
   if (sport) filter.sportType = sport;
   if (state && STATE_TO_STATUSES[state]) filter.status = { $in: STATE_TO_STATUSES[state] };
   else if (status) filter.status = status;
-  if (mine && req.user) {
+  if (mine) {
+    if (!req.user) throw ApiError.unauthorized('Authentication required');
     filter.$or = [{ createdBy: req.user._id }, { admins: req.user._id }];
   }
   const term = q?.trim();

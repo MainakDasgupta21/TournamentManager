@@ -56,6 +56,7 @@ export default function Dashboard() {
   const requestAccess = useRequestTournamentAccess();
   const confirm = useConfirm();
   const user = useAuth((s) => s.user);
+  const authStatus = useAuth((s) => s.status);
   const isSuperAdmin = user?.role === 'superadmin';
   useDocumentTitle('Dashboard');
 
@@ -66,6 +67,7 @@ export default function Dashboard() {
   const [sort, setSort] = useState('newest');
   const [page, setPage] = useState(1);
   const scopeInitialized = useRef(false);
+  const mineRefetchGuard = useRef('');
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
   const defaultScope = isSuperAdmin ? 'all' : 'mine';
 
@@ -110,6 +112,7 @@ export default function Dashboard() {
   const visible = data?.tournaments ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
+  const mineGuardKey = `${page}|${sort}|${status}|${sport}|${debouncedQuery}|${visible.map((t) => t._id).join(',')}`;
   const showToolbar = !isLoading && !isError;
   const userPendingCount = pendingUsersData?.pendingCount ?? 0;
   const tournamentPendingCount = pendingTournamentAccessData?.pendingCount ?? 0;
@@ -119,6 +122,27 @@ export default function Dashboard() {
     const safePages = Math.max(pages, 1);
     if (!isFetching && page > safePages) setPage(safePages);
   }, [isFetching, page, pages]);
+
+  // Defensive consistency pass: "My access" should only return tournaments the
+  // user can manage. If we ever receive otherwise, force one refetch for this
+  // filter state to recover from stale auth-scoped cache.
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || scope !== 'mine') {
+      mineRefetchGuard.current = '';
+      return;
+    }
+    if (isLoading || isFetching || isError || !visible.length) return;
+
+    const hasUnexpected = visible.some((t) => !t.canManage);
+    if (!hasUnexpected) {
+      mineRefetchGuard.current = '';
+      return;
+    }
+    if (mineRefetchGuard.current === mineGuardKey) return;
+
+    mineRefetchGuard.current = mineGuardKey;
+    refetch();
+  }, [authStatus, isError, isFetching, isLoading, mineGuardKey, refetch, scope, visible]);
 
   const onDelete = async (t) => {
     const ok = await confirm({

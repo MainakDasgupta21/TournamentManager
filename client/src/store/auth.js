@@ -1,11 +1,37 @@
 import { create } from 'zustand';
 import { api, setAccessToken, setOnUnauthorized } from '@/lib/api';
+import { queryClient } from '@/lib/queryClient';
 import { useTheme } from '@/store/theme';
 
 // Shared across all bootstrap callers so React StrictMode's double-mount (or any
 // concurrent boot) runs at most one refresh and can't overwrite a good session
 // with a superseded failure.
 let bootstrapPromise = null;
+const AUTH_SCOPED_QUERY_ROOTS = new Set([
+  'users',
+  'tournaments',
+  'tournament',
+  'tournamentAdmins',
+  'adminCandidates',
+  'tournamentAccessRequests',
+  'teams',
+  'team',
+  'groups',
+  'fixtures',
+  'fixture',
+  'standings',
+  'knockout',
+  'leaderboards',
+  'players',
+  'player',
+  'auditLogs',
+]);
+
+function clearAuthScopedQueries() {
+  queryClient.removeQueries({
+    predicate: (query) => AUTH_SCOPED_QUERY_ROOTS.has(query.queryKey?.[0]),
+  });
+}
 
 /**
  * Auth state. The access token lives in memory (not localStorage) to reduce XSS
@@ -19,6 +45,7 @@ export const useAuth = create((set, get) => ({
 
   setSession: ({ user, accessToken }) => {
     setAccessToken(accessToken);
+    clearAuthScopedQueries();
     // The server is the source of truth for the user's theme; apply it now.
     useTheme.getState().setTheme(user?.preferences?.theme ?? 'dark');
     set({ user, accessToken, status: 'authenticated' });
@@ -46,6 +73,7 @@ export const useAuth = create((set, get) => ({
       /* ignore network errors on logout */
     }
     setAccessToken(null);
+    clearAuthScopedQueries();
     useTheme.getState().reset();
     set({ user: null, accessToken: null, status: 'unauthenticated' });
   },
@@ -83,6 +111,7 @@ export const useAuth = create((set, get) => ({
         get().setSession(data.data);
       } catch {
         setAccessToken(null);
+        clearAuthScopedQueries();
         set({ user: null, accessToken: null, status: 'unauthenticated' });
       } finally {
         bootstrapPromise = null;
@@ -102,6 +131,7 @@ export const useAuth = create((set, get) => ({
 // When a refresh ultimately fails, clear the session.
 setOnUnauthorized(() => {
   setAccessToken(null);
+  clearAuthScopedQueries();
   useTheme.getState().reset();
   useAuth.setState({ user: null, accessToken: null, status: 'unauthenticated' });
 });
