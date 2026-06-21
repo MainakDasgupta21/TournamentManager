@@ -66,8 +66,22 @@ async function uploadToCloudinary(buffer, mimetype) {
     });
     return { url: result.secure_url, id: result.public_id, provider: 'cloudinary' };
   } catch (err) {
-    console.error('[cloudinary] upload failed:', err?.message ?? err);
-    throw new ApiError(502, 'Image upload to storage provider failed');
+    // The Cloudinary SDK exposes the upstream HTTP status on `http_code`.
+    // Surfacing it turns an opaque "upload failed" into an actionable cause:
+    // 401 => bad key/secret, 403 => the API key has no upload ("create") permission.
+    const status = err?.http_code ?? err?.error?.http_code ?? null;
+    const detail = err?.message ?? err?.error?.message ?? 'unknown error';
+    console.error(`[cloudinary] upload failed (http ${status ?? '?'}): ${detail}`);
+    const hint =
+      status === 401
+        ? ' — check CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET'
+        : status === 403
+          ? ' — the Cloudinary API key lacks upload ("create") permission'
+          : '';
+    throw new ApiError(
+      502,
+      `Image upload to Cloudinary failed${status ? ` (HTTP ${status})` : ''}${hint}`
+    );
   }
 }
 

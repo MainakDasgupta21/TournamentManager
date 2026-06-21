@@ -167,13 +167,37 @@ export const reviewTournamentAccessRequest = asyncHandler(async (req, res) => {
     ) {
       throw ApiError.badRequest('Requester is not an approved organiser');
     }
+  }
 
+  // Atomically claim the request: only the first reviewer to flip it away from
+  // PENDING wins. This closes the race where two super admins review the same
+  // request concurrently (e.g. an approve and a reject interleaving) — a losing
+  // reviewer now gets a 409 instead of silently overwriting the decision (and,
+  // crucially, the collaborator grant below only runs once the claim succeeds).
+  const claimed = await TournamentAccessRequest.findOneAndUpdate(
+    { _id: accessRequest._id, status: TOURNAMENT_ACCESS_REQUEST_STATUS.PENDING },
+    {
+      $set: {
+        status,
+        reviewNote: note,
+        reviewedBy: req.user._id,
+        reviewedAt: new Date(),
+      },
+    },
+    { new: true }
+  );
+  if (!claimed) throw ApiError.conflict('This request has already been reviewed');
+
+  if (status === TOURNAMENT_ACCESS_REQUEST_STATUS.APPROVED) {
     const requesterId = String(requester._id);
     const isOwner = String(tournament.createdBy) === requesterId;
-    const alreadyCollaborator = tournament.admins.some((a) => String(a) === requesterId);
-    if (!isOwner && !alreadyCollaborator) {
-      tournament.admins.push(requester._id);
-      await tournament.save();
+    if (!isOwner) {
+      // $addToSet is idempotent: it can never insert a duplicate admin id even
+      // under concurrent grants.
+      await Tournament.updateOne(
+        { _id: tournament._id },
+        { $addToSet: { admins: requester._id } }
+      );
     }
 
     await recordAudit({
@@ -186,16 +210,10 @@ export const reviewTournamentAccessRequest = asyncHandler(async (req, res) => {
       meta: {
         collaboratorId: requesterId,
         email: requester.email,
-        accessRequestId: String(accessRequest._id),
+        accessRequestId: String(claimed._id),
       },
     });
   }
-
-  accessRequest.status = status;
-  accessRequest.reviewNote = note;
-  accessRequest.reviewedBy = req.user._id;
-  accessRequest.reviewedAt = new Date();
-  await accessRequest.save();
 
   dispatchEmail(
     sendTournamentAccessDecisionEmail({
@@ -213,6 +231,6 @@ export const reviewTournamentAccessRequest = asyncHandler(async (req, res) => {
       status === TOURNAMENT_ACCESS_REQUEST_STATUS.APPROVED
         ? 'Tournament access approved'
         : 'Tournament access request rejected',
-    data: { request: accessRequest },
+    data: { request: claimed },
   });
 });

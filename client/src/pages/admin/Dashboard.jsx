@@ -336,7 +336,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Link>
-              {t.canManage ? (
+              {t.isOwner ? (
                 <Tooltip label="Delete tournament">
                   <Button
                     variant="ghost"
@@ -352,7 +352,7 @@ export default function Dashboard() {
                     <Trash2 className="text-destructive" />
                   </Button>
                 </Tooltip>
-              ) : (
+              ) : t.canManage ? null : (
                 <Tooltip
                   label={
                     t.myAccessRequest?.status === 'pending'

@@ -17,8 +17,11 @@ export default function MatchShareBar({ card, canSaveImage = false, className })
         await navigator.share({ title: `${card.teamAName} vs ${card.teamBName}`, url });
         return;
       }
-    } catch {
-      return; // user dismissed
+    } catch (err) {
+      // The user dismissing the share sheet throws AbortError — that's a no-op.
+      // Any *other* failure (e.g. share not actually permitted) should still
+      // fall through to the clipboard fallback rather than silently doing nothing.
+      if (err?.name === 'AbortError') return;
     }
     try {
       await navigator.clipboard.writeText(url);

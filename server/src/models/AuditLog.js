@@ -38,5 +38,8 @@ const auditLogSchema = new mongoose.Schema(
 
 // Newest-first within a tournament is the dominant query.
 auditLogSchema.index({ tournamentId: 1, createdAt: -1 });
+// The audit log UI can filter by entity type; this serves that filtered, sorted
+// read efficiently instead of degrading the {tournamentId, createdAt} plan.
+auditLogSchema.index({ tournamentId: 1, entityType: 1, createdAt: -1 });
 
 export const AuditLog = mongoose.model('AuditLog', auditLogSchema);

@@ -82,4 +82,8 @@ const playerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Roster reads/recalcs filter by tournament + team together (e.g. formation
+// validation, scoped player-stat recompute), so back that with a compound index.
+playerSchema.index({ tournamentId: 1, teamId: 1 });
+
 export const Player = mongoose.model('Player', playerSchema);

@@ -60,8 +60,10 @@ export default function PublicTournamentLayout() {
         await navigator.share({ title, url });
         return;
       }
-    } catch {
-      return; // user dismissed the share sheet
+    } catch (err) {
+      // AbortError = user dismissed the share sheet. For any other error, fall
+      // through to the clipboard fallback instead of silently giving up.
+      if (err?.name === 'AbortError') return;
     }
     try {
       await navigator.clipboard.writeText(url);

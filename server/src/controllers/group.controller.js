@@ -171,19 +171,23 @@ export const autoDistribute = asyncHandler(async (req, res) => {
     buckets[groupIdx].push({ teamId, seed: idx + 1 });
   });
 
-  // Persist memberships + seeds.
-  await Promise.all(
-    groups.map(async (group, gi) => {
-      const ids = buckets[gi].map((b) => b.teamId);
-      group.teams = ids;
-      await group.save();
-      await Promise.all(
-        buckets[gi].map((b) =>
-          Team.findByIdAndUpdate(b.teamId, { $set: { groupId: group._id, seed: b.seed } })
-        )
-      );
-    })
-  );
+  // Persist memberships + seeds. Team membership updates are batched into a
+  // single bulkWrite (one round-trip) instead of one findByIdAndUpdate per team
+  // to avoid an N+1 write storm with large fields.
+  const teamOps = [];
+  groups.forEach((group, gi) => {
+    group.teams = buckets[gi].map((b) => b.teamId);
+    for (const b of buckets[gi]) {
+      teamOps.push({
+        updateOne: {
+          filter: { _id: b.teamId, tournamentId: req.tournament._id },
+          update: { $set: { groupId: group._id, seed: b.seed } },
+        },
+      });
+    }
+  });
+  await Promise.all(groups.map((group) => group.save()));
+  if (teamOps.length) await Team.bulkWrite(teamOps);
 
   // Rebuild standings to a clean, fresh state for the new group layout.
   await recalcAllStandings(req.tournament._id);

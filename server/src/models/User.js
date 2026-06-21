@@ -57,6 +57,10 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Password reset looks up users by the hashed token; index it (sparse, since
+// the vast majority of users have a null token) so the lookup is not a scan.
+userSchema.index({ resetPasswordTokenHash: 1 }, { sparse: true });
+
 /** Hash a plaintext password and assign it. */
 userSchema.methods.setPassword = async function setPassword(plain) {
   const salt = await bcrypt.genSalt(10);

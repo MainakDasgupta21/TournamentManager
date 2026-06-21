@@ -14,6 +14,18 @@ export function canManageTournament(user, tournament) {
 }
 
 /**
+ * True if the user *owns* the tournament (its creator) or is a super admin.
+ * Distinct from `canManageTournament`: collaborator admins can manage day-to-day
+ * data but must not perform owner-only, destructive actions (e.g. deleting the
+ * whole tournament and all of its dependent documents).
+ */
+export function isTournamentOwner(user, tournament) {
+  if (!user) return false;
+  if (user.role === USER_ROLES.SUPER_ADMIN) return true;
+  return String(tournament.createdBy) === String(user._id);
+}
+
+/**
  * Loads the tournament referenced by :id (or :tournamentId) onto req.tournament.
  * Use on all tournament-scoped routes so we hit the DB once and 404 early.
  */
@@ -45,6 +57,18 @@ export const loadTournamentFromFixture = asyncHandler(async (req, res, next) => 
 export const requireTournamentManager = asyncHandler(async (req, res, next) => {
   if (!canManageTournament(req.user, req.tournament)) {
     throw ApiError.forbidden('You cannot manage this tournament');
+  }
+  next();
+});
+
+/**
+ * Guards owner-only destructive actions on req.tournament (e.g. delete). A
+ * collaborator admin can manage data but cannot delete the tournament; only the
+ * creator or a super admin may. Must run after authenticate + loadTournament.
+ */
+export const requireTournamentOwner = asyncHandler(async (req, res, next) => {
+  if (!isTournamentOwner(req.user, req.tournament)) {
+    throw ApiError.forbidden('Only the tournament owner can perform this action');
   }
   next();
 });

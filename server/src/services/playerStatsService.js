@@ -157,14 +157,17 @@ export async function recalcPlayerStats(tournamentId, { teamIds = null } = {}) {
   }
 
   const now = new Date();
+  const statsPath = sport === SPORTS.CRICKET ? 'stats.cricket' : 'stats.football';
   const ops = [];
   for (const [pid, stats] of acc) {
     if (!playerById.has(pid)) continue;
-    const setStats = sport === SPORTS.CRICKET ? { cricket: stats } : { football: stats };
+    // Write only this sport's section via a dotted path so the sibling sport's
+    // cached stats are never clobbered (defensive: a tournament is single-sport,
+    // but replacing the whole `stats` subdoc would wipe the other branch).
     ops.push({
       updateOne: {
         filter: { _id: pid },
-        update: { $set: { stats: setStats, statsUpdatedAt: now } },
+        update: { $set: { [statsPath]: stats, statsUpdatedAt: now } },
       },
     });
   }

@@ -68,6 +68,9 @@ const fixtureSchema = new mongoose.Schema(
 fixtureSchema.index({ tournamentId: 1, stage: 1, status: 1 });
 fixtureSchema.index({ tournamentId: 1, groupId: 1, groupRound: 1 });
 fixtureSchema.index({ tournamentId: 1, scheduledAt: 1 });
+// Player-stat recalc + leaderboards scan completed fixtures of a tournament
+// without filtering by stage, so a {tournamentId, status} index covers them.
+fixtureSchema.index({ tournamentId: 1, status: 1 });
 
 export { FIXTURE_STATUS, FIXTURE_STAGE };
 export const Fixture = mongoose.model('Fixture', fixtureSchema);

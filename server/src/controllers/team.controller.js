@@ -252,8 +252,11 @@ export const updatePlayer = asyncHandler(async (req, res) => {
   if (req.body.role && !allowedRoles(req.tournament.sportType).includes(req.body.role)) {
     throw ApiError.badRequest(`Invalid role for ${req.tournament.sportType}`);
   }
+  // Scope to the team in the path too: a player is a nested resource of its
+  // team, so PATCH /teams/:teamId/players/:playerId must not edit a player that
+  // belongs to a different team (even within the same tournament).
   const player = await Player.findOneAndUpdate(
-    { _id: req.params.playerId, tournamentId: req.tournament._id },
+    { _id: req.params.playerId, teamId: req.params.teamId, tournamentId: req.tournament._id },
     { $set: req.body },
     { new: true }
   );
@@ -264,6 +267,7 @@ export const updatePlayer = asyncHandler(async (req, res) => {
 export const deletePlayer = asyncHandler(async (req, res) => {
   const player = await Player.findOneAndDelete({
     _id: req.params.playerId,
+    teamId: req.params.teamId,
     tournamentId: req.tournament._id,
   });
   if (!player) throw ApiError.notFound('Player not found');

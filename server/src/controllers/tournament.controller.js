@@ -12,7 +12,7 @@ import { KnockoutBracket } from '../models/KnockoutBracket.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { TournamentAccessRequest } from '../models/TournamentAccessRequest.js';
 import { User } from '../models/User.js';
-import { canManageTournament } from '../middleware/loadTournament.js';
+import { canManageTournament, isTournamentOwner } from '../middleware/loadTournament.js';
 import { recalcAllStandings } from '../services/standingsService.js';
 import { recordAudit } from '../services/auditService.js';
 import { emitToTournament, EVENTS } from '../socket/index.js';
@@ -137,6 +137,8 @@ export const listTournaments = asyncHandler(async (req, res) => {
     return {
       ...t,
       canManage,
+      // Owner-only actions (e.g. delete) gate on this, not canManage.
+      isOwner: isTournamentOwner(req.user, t),
       myAccessRequest,
       canRequestAccess:
         req.user?.role === USER_ROLES.TOURNAMENT_ADMIN &&
@@ -183,6 +185,7 @@ export const getTournament = asyncHandler(async (req, res) => {
       tournament: {
         ...t.toObject(),
         canManage,
+        isOwner: isTournamentOwner(req.user, t),
         myAccessRequest,
         canRequestAccess:
           req.user?.role === USER_ROLES.TOURNAMENT_ADMIN &&

@@ -37,8 +37,10 @@ export default function WormChart({ innings = [], teamsById = {} }) {
     <div className="w-full overflow-hidden">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Cumulative runs worm chart">
         {/* horizontal grid + y labels */}
-        {gridY.map((val) => (
-          <g key={val}>
+        {gridY.map((val, gi) => (
+          // Key by index: grid values can repeat (e.g. all 0 when no runs yet),
+          // which would otherwise produce duplicate React keys.
+          <g key={gi}>
             <line x1={PAD.left} y1={y(val)} x2={W - PAD.right} y2={y(val)} stroke="hsl(var(--border))" strokeWidth="1" opacity="0.5" />
             <text x={PAD.left - 6} y={y(val) + 3} textAnchor="end" className="fill-muted-foreground" fontSize="9">{val}</text>
           </g>

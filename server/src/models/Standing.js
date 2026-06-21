@@ -41,5 +41,8 @@ const standingSchema = new mongoose.Schema(
 );
 
 standingSchema.index({ tournamentId: 1, groupId: 1, teamId: 1 }, { unique: true });
+// Knockout qualifier selection reads a group's rows in rank order; this serves
+// `find({ tournamentId, groupId }).sort({ rank: 1 })` without an in-memory sort.
+standingSchema.index({ tournamentId: 1, groupId: 1, rank: 1 });
 
 export const Standing = mongoose.model('Standing', standingSchema);

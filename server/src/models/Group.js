@@ -19,5 +19,7 @@ const groupSchema = new mongoose.Schema(
 );
 
 groupSchema.index({ tournamentId: 1, name: 1 }, { unique: true });
+// Groups are listed in display order within a tournament (`sort({ order, name })`).
+groupSchema.index({ tournamentId: 1, order: 1 });
 
 export const Group = mongoose.model('Group', groupSchema);

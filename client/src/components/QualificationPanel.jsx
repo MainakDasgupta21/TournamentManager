@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleDot, XCircle } from 'lucide-react';
 import { QUALIFICATION_LABELS } from '@/lib/qualification';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,13 @@ const STYLES = {
 export default function QualificationPanel({ scenarios, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
+
+  // Re-sync the collapse state when the parent's intent changes (e.g. toggling
+  // between the all-groups overview and a single focused group). Without this,
+  // `useState(defaultOpen)` only honours the initial value and panels get stuck.
+  useEffect(() => {
+    setOpen(defaultOpen);
+  }, [defaultOpen]);
 
   if (!scenarios || scenarios.remainingFixtures === 0) return null;
   const { teams, qualifyCount, remainingFixtures } = scenarios;

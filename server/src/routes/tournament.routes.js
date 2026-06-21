@@ -6,6 +6,7 @@ import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
 import {
   loadTournament,
   requireTournamentManager,
+  requireTournamentOwner,
 } from '../middleware/loadTournament.js';
 import {
   createTournament,
@@ -143,11 +144,14 @@ router.delete(
   removeAdmin
 );
 
+// Deleting a tournament (and cascading all of its data) is owner-only: a
+// collaborator admin can manage day-to-day data but must not be able to nuke the
+// whole tournament. Super admins are always allowed.
 router.delete(
   '/:id',
   authenticate,
   loadTournament,
-  requireTournamentManager,
+  requireTournamentOwner,
   deleteTournament
 );
 

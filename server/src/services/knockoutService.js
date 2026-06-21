@@ -24,19 +24,27 @@ async function buildRankedGroups(tournament) {
   await recalcAllStandings(tournament._id);
   const groups = await Group.find({ tournamentId: tournament._id }).sort({ order: 1, name: 1 });
 
-  const ranked = [];
+  // Fetch every group's standings in one query (rank-ordered) and bucket by
+  // group in memory, rather than issuing one query per group inside the loop.
+  const allStandings = await Standing.find({
+    tournamentId: tournament._id,
+    groupId: { $in: groups.map((g) => g._id) },
+  })
+    .sort({ rank: 1 })
+    .lean();
+
+  const standingsByGroup = new Map();
   const standingByTeam = new Map();
+  for (const s of allStandings) {
+    const key = String(s.groupId);
+    if (!standingsByGroup.has(key)) standingsByGroup.set(key, []);
+    standingsByGroup.get(key).push(s);
+    standingByTeam.set(String(s.teamId), s);
+  }
+
+  const ranked = [];
   for (const group of groups) {
-    // eslint-disable-next-line no-await-in-loop
-    const standings = await Standing.find({
-      tournamentId: tournament._id,
-      groupId: group._id,
-    })
-      .sort({ rank: 1 })
-      .lean();
-
-    for (const s of standings) standingByTeam.set(String(s.teamId), s);
-
+    const standings = standingsByGroup.get(String(group._id)) ?? [];
     const rankedTeamIds = standings.length
       ? standings.map((s) => String(s.teamId))
       : group.teams.map((t) => String(t)); // pre-match fallback: group order

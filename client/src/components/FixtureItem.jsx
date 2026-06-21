@@ -68,14 +68,26 @@ export default function FixtureItem({ fixture, sport, live, onClick, className }
   const bName = fixture.teamB?.name || fixture.placeholderB || 'TBD';
   const action = completed ? 'view result' : isLive ? 'live, view details' : 'view fixture';
 
+  // Only render an interactive button when there is something to do. Without an
+  // onClick (e.g. the admin overview's read-only "pending fixtures" cards) we
+  // render a plain container so assistive tech doesn't announce a dead button.
+  const interactive = typeof onClick === 'function';
+  const Root = interactive ? 'button' : 'div';
+  const interactiveProps = interactive
+    ? {
+        type: 'button',
+        onClick,
+        'aria-label': `${aName} versus ${bName} — ${action}`,
+      }
+    : {};
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`${aName} versus ${bName} — ${action}`}
+    <Root
+      {...interactiveProps}
       className={cn(
-        'group surface-elevated surface-interactive w-full rounded-2xl border border-border/70 p-3 text-left transition-colors hover:border-primary/40 hover:bg-card/90',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'group surface-elevated w-full rounded-2xl border border-border/70 p-3 text-left transition-colors',
+        interactive &&
+          'surface-interactive hover:border-primary/40 hover:bg-card/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         className
       )}
     >
@@ -101,6 +113,6 @@ export default function FixtureItem({ fixture, sport, live, onClick, className }
           {context}
         </div>
       )}
-    </button>
+    </Root>
   );
 }
