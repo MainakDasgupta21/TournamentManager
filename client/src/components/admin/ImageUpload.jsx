@@ -27,13 +27,16 @@ export default function ImageUpload({ label, value, onChange, hint, variant = 'l
     if (!file) return;
     try {
       const url = await upload.mutateAsync(file);
-      const safe = normalizeUploadAssetUrl(url);
-      if (!safe) {
-        toast.error('Uploaded image URL is invalid');
+      const uploadedUrl = typeof url === 'string' ? url.trim() : '';
+      if (!uploadedUrl) {
+        toast.error('Upload succeeded but no image URL was returned');
         return;
       }
-      onChange(safe);
-      setInputValue(safe);
+      // The URL comes from our own authenticated upload endpoint and is already
+      // trusted server output. Save it directly so persistence cannot be blocked
+      // by client-side URL normalisation rules intended for user-typed input.
+      onChange(uploadedUrl);
+      setInputValue(uploadedUrl);
       toast.success('Image uploaded');
     } catch (err) {
       toast.error(apiError(err));

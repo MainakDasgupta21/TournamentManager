@@ -9,6 +9,12 @@ import { saveImage } from '../services/imageStorage.js';
  */
 export const uploadFile = asyncHandler(async (req, res) => {
   if (!req.file) throw ApiError.badRequest('No image uploaded (field name must be "file")');
-  const { url, id } = await saveImage({ buffer: req.file.buffer, mimetype: req.file.mimetype });
+  const requestHost = req.get('host');
+  const publicBaseUrl = requestHost ? `${req.protocol}://${requestHost}` : '';
+  const { url, id } = await saveImage({
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    publicBaseUrl,
+  });
   return sendSuccess(res, { message: 'Image uploaded', data: { url, filename: id } });
 });

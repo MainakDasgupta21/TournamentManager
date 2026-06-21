@@ -85,23 +85,43 @@ async function uploadToCloudinary(buffer, mimetype) {
   }
 }
 
-function saveToDisk(buffer, mimetype) {
+function saveToDisk(buffer, mimetype, publicBaseUrl) {
   const ext = EXT_BY_MIME[mimetype];
   if (!ext) throw ApiError.badRequest('Only PNG, JPEG, WebP or GIF images are allowed');
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9).toString(36)}${ext}`;
   fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
-  // Same-origin relative path so the existing client URL sanitiser accepts it.
-  return { url: `/uploads/${filename}`, id: filename, provider: 'local-disk' };
+  const relativePath = `/uploads/${filename}`;
+
+  // Prefer an explicit deployment URL when configured, otherwise use the
+  // request host passed by the upload controller. This keeps returned URLs
+  // absolute/portable in split frontend+API deployments.
+  const baseCandidates = [env.publicUrl, publicBaseUrl].filter(Boolean);
+  for (const base of baseCandidates) {
+    try {
+      const parsedBase = new URL(base);
+      if (!['http:', 'https:'].includes(parsedBase.protocol)) continue;
+      return {
+        url: new URL(relativePath, parsedBase).toString(),
+        id: filename,
+        provider: 'local-disk',
+      };
+    } catch {
+      /* ignore invalid base URL and continue */
+    }
+  }
+  return { url: relativePath, id: filename, provider: 'local-disk' };
 }
 
 /**
  * Persist an uploaded image buffer and return its public URL + provider id.
- * @param {{ buffer: Buffer, mimetype: string }} file
+ * @param {{ buffer: Buffer, mimetype: string, publicBaseUrl?: string }} file
  */
-export async function saveImage({ buffer, mimetype } = {}) {
+export async function saveImage({ buffer, mimetype, publicBaseUrl } = {}) {
   if (!buffer?.length) throw ApiError.badRequest('Empty image upload');
   if (!ALLOWED_IMAGE_MIME.has(mimetype)) {
     throw ApiError.badRequest('Only PNG, JPEG, WebP or GIF images are allowed');
   }
-  return cloudinaryReady ? uploadToCloudinary(buffer, mimetype) : saveToDisk(buffer, mimetype);
+  return cloudinaryReady
+    ? uploadToCloudinary(buffer, mimetype)
+    : saveToDisk(buffer, mimetype, publicBaseUrl);
 }

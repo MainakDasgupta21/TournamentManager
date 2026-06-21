@@ -16,9 +16,7 @@ export function useUploadImage() {
     mutationFn: async (file) => {
       const fd = new FormData();
       fd.append('file', file);
-      const { data } = await api.post('/uploads', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.post('/uploads', fd);
       return data.data.url;
     },
   });

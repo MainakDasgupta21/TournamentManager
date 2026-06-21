@@ -4,11 +4,16 @@ import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { initSocket } from './socket/index.js';
 import { ensureSeedSuperAdmin } from './services/superAdminService.js';
-import { imageStorageMode } from './services/imageStorage.js';
+import { imageStorageMode, isCloudinaryConfigured } from './services/imageStorage.js';
 
 async function bootstrap() {
   await connectDB();
   await ensureSeedSuperAdmin({ log: true });
+  if (env.isProd && !isCloudinaryConfigured()) {
+    console.warn(
+      '[server] WARNING: Cloudinary is not configured in production; image uploads will use local disk and can be lost on restart/redeploy.'
+    );
+  }
 
   const app = createApp();
   const server = http.createServer(app);
