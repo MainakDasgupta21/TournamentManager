@@ -72,8 +72,119 @@ export const CRICKET_ROLES = Object.freeze([
   'wicketkeeper',
 ]);
 
-// Football-specific roster positions
-export const FOOTBALL_POSITIONS = Object.freeze(['GK', 'DEF', 'MID', 'FWD']);
+// Football-specific roster positions (detailed tactical vocabulary).
+export const FOOTBALL_POSITIONS = Object.freeze([
+  'GK',
+  'LB',
+  'LCB',
+  'CB',
+  'RCB',
+  'RB',
+  'LWB',
+  'RWB',
+  'LDM',
+  'CDM',
+  'RDM',
+  'LCM',
+  'CM',
+  'RCM',
+  'LAM',
+  'CAM',
+  'RAM',
+  'LM',
+  'RM',
+  'LW',
+  'CF',
+  'RW',
+  'ST',
+]);
+
+// Legacy coarse football roles we still accept during transition.
+export const FOOTBALL_LEGACY_POSITIONS = Object.freeze(['DEF', 'MID', 'FWD']);
+
+export const FOOTBALL_POSITION_VALUES = Object.freeze([
+  ...new Set([...FOOTBALL_POSITIONS, ...FOOTBALL_LEGACY_POSITIONS]),
+]);
+
+export const FOOTBALL_POSITION_LABELS = Object.freeze({
+  GK: 'Goalkeeper',
+  LB: 'Left Back',
+  LCB: 'Left Center Back',
+  CB: 'Center Back',
+  RCB: 'Right Center Back',
+  RB: 'Right Back',
+  LWB: 'Left Wing Back',
+  RWB: 'Right Wing Back',
+  LDM: 'Left Defensive Midfielder',
+  CDM: 'Defensive Midfielder',
+  RDM: 'Right Defensive Midfielder',
+  LCM: 'Left Central Midfielder',
+  CM: 'Central Midfielder',
+  RCM: 'Right Central Midfielder',
+  LAM: 'Left Attacking Midfielder',
+  CAM: 'Attacking Midfielder',
+  RAM: 'Right Attacking Midfielder',
+  LM: 'Left Midfielder',
+  RM: 'Right Midfielder',
+  LW: 'Left Winger',
+  CF: 'Center Forward',
+  RW: 'Right Winger',
+  ST: 'Striker',
+  DEF: 'Defender (Legacy)',
+  MID: 'Midfielder (Legacy)',
+  FWD: 'Forward (Legacy)',
+});
+
+export const FOOTBALL_POSITION_GROUPS = Object.freeze({
+  GK: 'GK',
+  LB: 'DEF',
+  LCB: 'DEF',
+  CB: 'DEF',
+  RCB: 'DEF',
+  RB: 'DEF',
+  LWB: 'DEF',
+  RWB: 'DEF',
+  LDM: 'MID',
+  CDM: 'MID',
+  RDM: 'MID',
+  LCM: 'MID',
+  CM: 'MID',
+  RCM: 'MID',
+  LAM: 'MID',
+  CAM: 'MID',
+  RAM: 'MID',
+  LM: 'MID',
+  RM: 'MID',
+  LW: 'FWD',
+  CF: 'FWD',
+  RW: 'FWD',
+  ST: 'FWD',
+  DEF: 'DEF',
+  MID: 'MID',
+  FWD: 'FWD',
+});
+
+export const FOOTBALL_LEGACY_POSITION_MAP = Object.freeze({
+  DEF: 'CB',
+  MID: 'CM',
+  FWD: 'ST',
+});
+
+export function normalizeFootballPosition(position) {
+  const raw = typeof position === 'string' ? position.trim().toUpperCase() : '';
+  if (!raw) return '';
+  return FOOTBALL_LEGACY_POSITION_MAP[raw] ?? raw;
+}
+
+export function footballPositionGroup(position) {
+  const normalized = normalizeFootballPosition(position);
+  return FOOTBALL_POSITION_GROUPS[normalized] ?? FOOTBALL_POSITION_GROUPS[position] ?? null;
+}
+
+export function footballPositionLabel(position) {
+  const normalized = normalizeFootballPosition(position);
+  return FOOTBALL_POSITION_LABELS[normalized] ?? FOOTBALL_POSITION_LABELS[position] ?? normalized ?? '';
+}
 
 /**
  * Supported football formation presets. Coordinates are percentage-based pitch
@@ -118,6 +229,84 @@ export const FOOTBALL_FORMATION_PRESETS = Object.freeze({
     { slot: 'RM', label: 'RM', line: 'mid', x: 84, y: 50 },
     { slot: 'ST1', label: 'ST', line: 'fwd', x: 40, y: 24 },
     { slot: 'ST2', label: 'ST', line: 'fwd', x: 60, y: 24 },
+  ]),
+  '3-5-2': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 32, y: 77 },
+    { slot: 'CB', label: 'CB', line: 'def', x: 50, y: 79 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 68, y: 77 },
+    { slot: 'LWB', label: 'LWB', line: 'mid', x: 14, y: 56 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 36, y: 53 },
+    { slot: 'CDM', label: 'CDM', line: 'mid', x: 50, y: 57 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 64, y: 53 },
+    { slot: 'RWB', label: 'RWB', line: 'mid', x: 86, y: 56 },
+    { slot: 'ST1', label: 'ST', line: 'fwd', x: 42, y: 24 },
+    { slot: 'ST2', label: 'ST', line: 'fwd', x: 58, y: 24 },
+  ]),
+  '3-4-3': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 32, y: 77 },
+    { slot: 'CB', label: 'CB', line: 'def', x: 50, y: 79 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 68, y: 77 },
+    { slot: 'LM', label: 'LM', line: 'mid', x: 16, y: 56 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 39, y: 55 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 61, y: 55 },
+    { slot: 'RM', label: 'RM', line: 'mid', x: 84, y: 56 },
+    { slot: 'LW', label: 'LW', line: 'fwd', x: 20, y: 30 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 20 },
+    { slot: 'RW', label: 'RW', line: 'fwd', x: 80, y: 30 },
+  ]),
+  '4-1-4-1': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LB', label: 'LB', line: 'def', x: 18, y: 75 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 38, y: 77 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 62, y: 77 },
+    { slot: 'RB', label: 'RB', line: 'def', x: 82, y: 75 },
+    { slot: 'CDM', label: 'CDM', line: 'mid', x: 50, y: 62 },
+    { slot: 'LM', label: 'LM', line: 'mid', x: 18, y: 48 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 40, y: 50 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 60, y: 50 },
+    { slot: 'RM', label: 'RM', line: 'mid', x: 82, y: 48 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 22 },
+  ]),
+  '4-5-1': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LB', label: 'LB', line: 'def', x: 18, y: 75 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 38, y: 77 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 62, y: 77 },
+    { slot: 'RB', label: 'RB', line: 'def', x: 82, y: 75 },
+    { slot: 'LM', label: 'LM', line: 'mid', x: 16, y: 55 },
+    { slot: 'LDM', label: 'LDM', line: 'mid', x: 34, y: 58 },
+    { slot: 'CM', label: 'CM', line: 'mid', x: 50, y: 56 },
+    { slot: 'RDM', label: 'RDM', line: 'mid', x: 66, y: 58 },
+    { slot: 'RM', label: 'RM', line: 'mid', x: 84, y: 55 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 22 },
+  ]),
+  '5-3-2': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LWB', label: 'LWB', line: 'def', x: 12, y: 68 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 30, y: 76 },
+    { slot: 'CB', label: 'CB', line: 'def', x: 50, y: 79 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 70, y: 76 },
+    { slot: 'RWB', label: 'RWB', line: 'def', x: 88, y: 68 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 36, y: 52 },
+    { slot: 'CDM', label: 'CDM', line: 'mid', x: 50, y: 56 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 64, y: 52 },
+    { slot: 'ST1', label: 'ST', line: 'fwd', x: 42, y: 24 },
+    { slot: 'ST2', label: 'ST', line: 'fwd', x: 58, y: 24 },
+  ]),
+  '5-4-1': Object.freeze([
+    { slot: 'GK', label: 'GK', line: 'gk', x: 50, y: 90 },
+    { slot: 'LWB', label: 'LWB', line: 'def', x: 12, y: 68 },
+    { slot: 'LCB', label: 'LCB', line: 'def', x: 30, y: 76 },
+    { slot: 'CB', label: 'CB', line: 'def', x: 50, y: 79 },
+    { slot: 'RCB', label: 'RCB', line: 'def', x: 70, y: 76 },
+    { slot: 'RWB', label: 'RWB', line: 'def', x: 88, y: 68 },
+    { slot: 'LM', label: 'LM', line: 'mid', x: 18, y: 50 },
+    { slot: 'LCM', label: 'LCM', line: 'mid', x: 40, y: 52 },
+    { slot: 'RCM', label: 'RCM', line: 'mid', x: 60, y: 52 },
+    { slot: 'RM', label: 'RM', line: 'mid', x: 82, y: 50 },
+    { slot: 'ST', label: 'ST', line: 'fwd', x: 50, y: 22 },
   ]),
 });
 export const FOOTBALL_FORMATION_PRESET_VALUES = Object.keys(FOOTBALL_FORMATION_PRESETS);

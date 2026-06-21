@@ -183,7 +183,7 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate, formationBy
       {sport === 'football' && (formationBySide?.teamA || formationBySide?.teamB) && (
         <div className="space-y-2 border-t border-border/60 pt-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Formation</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 md:grid-cols-2">
             <FormationBoard
               compact
               formation={formationBySide?.teamA}

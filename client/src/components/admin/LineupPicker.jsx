@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Users } from 'lucide-react';
+import { SPORTS, footballPositionLabel, normalizeFootballPosition } from '@tms/shared/constants';
 import { cn } from '@/lib/utils';
 import FormationEditor from './FormationEditor';
 import {
@@ -35,7 +36,7 @@ export function cleanFormationOverrides(value) {
   return normalizeFormationOverrides(value);
 }
 
-function SideColumn({ team, players, selected, onToggle }) {
+function SideColumn({ team, players, selected, onToggle, sport }) {
   const sel = new Set(selected);
   return (
     <div className="space-y-1.5">
@@ -64,7 +65,11 @@ function SideColumn({ team, players, selected, onToggle }) {
                 {p.jerseyNumber != null ? `${p.jerseyNumber}. ` : ''}{p.name}
               </span>
               {p.role && (
-                <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">{p.role}</span>
+                <span className="ml-auto text-[10px] tracking-wide text-muted-foreground">
+                  {sport === SPORTS.FOOTBALL
+                    ? `${normalizeFootballPosition(p.role)} - ${footballPositionLabel(p.role)}`
+                    : p.role}
+                </span>
               )}
             </label>
           ))}
@@ -83,6 +88,7 @@ function SideColumn({ team, players, selected, onToggle }) {
 export default function LineupPicker({
   teamA,
   teamB,
+  sport = null,
   rosterByTeam,
   value,
   onChange,
@@ -137,12 +143,14 @@ export default function LineupPicker({
           <div className="grid gap-3 sm:grid-cols-2">
             <SideColumn
               team={teamA}
+              sport={sport}
               players={rosterByTeam?.[teamA?._id] ?? []}
               selected={value?.teamA ?? []}
               onToggle={(pid) => toggle('teamA', pid)}
             />
             <SideColumn
               team={teamB}
+              sport={sport}
               players={rosterByTeam?.[teamB?._id] ?? []}
               selected={value?.teamB ?? []}
               onToggle={(pid) => toggle('teamB', pid)}
@@ -153,14 +161,18 @@ export default function LineupPicker({
             <div className="space-y-3 rounded-lg border border-border/70 bg-secondary/20 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Formation override (football)
+                  Match tactical override (football)
                 </p>
                 {hasOverrides ? (
-                  <span className="text-xs text-muted-foreground">Custom override active</span>
+                  <span className="text-xs text-muted-foreground">Custom match shape active</span>
                 ) : (
-                  <span className="text-xs text-muted-foreground">Using team defaults</span>
+                  <span className="text-xs text-muted-foreground">Using saved team defaults</span>
                 )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Override only this fixture. Drag to swap on desktop, or tap player then tap slot
+                on touch devices.
+              </p>
 
               <div className="grid gap-3 xl:grid-cols-2">
                 <div className="space-y-2 rounded-xl border border-border/70 bg-card/70 p-3">
@@ -186,10 +198,10 @@ export default function LineupPicker({
                     title="Team A shape"
                     description={
                       formationOverrides?.teamA
-                        ? 'Override active for this match.'
+                        ? 'Override active for this fixture.'
                         : defaultFormations?.teamA
-                          ? 'Editing now will create a match-only override.'
-                          : 'No default found. Create a match-only shape.'
+                          ? 'Start editing to create a fixture-only override.'
+                          : 'No team default found. Build a fixture-only shape.'
                     }
                   />
                 </div>
@@ -217,10 +229,10 @@ export default function LineupPicker({
                     title="Team B shape"
                     description={
                       formationOverrides?.teamB
-                        ? 'Override active for this match.'
+                        ? 'Override active for this fixture.'
                         : defaultFormations?.teamB
-                          ? 'Editing now will create a match-only override.'
-                          : 'No default found. Create a match-only shape.'
+                          ? 'Start editing to create a fixture-only override.'
+                          : 'No team default found. Build a fixture-only shape.'
                     }
                   />
                 </div>

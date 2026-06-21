@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { Shirt, ArrowLeft, Swords } from 'lucide-react';
+import { SPORTS, footballPositionLabel, normalizeFootballPosition } from '@tms/shared/constants';
 import { useTeam, useStandings } from '@/hooks/queries';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import FixtureItem from '@/components/FixtureItem';
@@ -71,7 +72,7 @@ export default function TeamPage() {
   useDocumentTitle(data?.team?.name);
 
   const fixtures = data?.fixtures ?? [];
-  const isCricket = tournament.sportType === 'cricket';
+  const isCricket = tournament.sportType === SPORTS.CRICKET;
   const statLine = (p) => {
     if (isCricket) {
       const c = p.stats?.cricket ?? {};
@@ -128,7 +129,7 @@ export default function TeamPage() {
   const { team, players = [] } = data;
   const playersById = playerMapById(players);
   const defaultFormation =
-    tournament.sportType === 'football'
+    tournament.sportType === SPORTS.FOOTBALL
       ? effectiveFormation({ override: null, fallback: team.defaultFormation })
       : null;
   const row = standing?.row;
@@ -224,7 +225,13 @@ export default function TeamPage() {
                           <PlayerCategoryBadge category={p.category} size="xs" />
                         </div>
                         <p className="truncate text-xs text-muted-foreground">
-                          {p.role && <span className="uppercase tracking-wider">{p.role}</span>}
+                          {p.role && (
+                            <span className="tracking-wide">
+                              {isCricket
+                                ? p.role
+                                : `${normalizeFootballPosition(p.role)} - ${footballPositionLabel(p.role)}`}
+                            </span>
+                          )}
                           {p.role && ' · '}
                           {statLine(p)}
                         </p>

@@ -244,7 +244,7 @@ function nextName(rng) {
   return `${fn} ${ln}`;
 }
 
-const FOOTBALL_LINEUP = ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD'];
+const FOOTBALL_LINEUP = ['GK', 'CB', 'RB', 'CM', 'LW', 'ST'];
 const CRICKET_LINEUP = [
   'wicketkeeper', 'batsman', 'batsman', 'all-rounder', 'bowler', 'bowler', 'all-rounder',
 ];

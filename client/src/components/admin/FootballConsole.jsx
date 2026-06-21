@@ -312,6 +312,7 @@ export default function FootballConsole({
       <LineupPicker
         teamA={fixture.teamA}
         teamB={fixture.teamB}
+        sport={tournament.sportType}
         rosterByTeam={rosterByTeam}
         value={lineups}
         onChange={setLineups}

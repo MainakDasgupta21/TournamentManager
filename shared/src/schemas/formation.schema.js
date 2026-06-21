@@ -22,10 +22,19 @@ export const footballFormationSchema = z
   })
   .superRefine((value, ctx) => {
     const expected = (FOOTBALL_FORMATION_PRESETS[value.preset] ?? []).map((s) => s.slot);
+    const uniqueExpected = new Set(expected);
     if (expected.length !== FOOTBALL_FORMATION_SLOT_COUNT) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Preset ${value.preset} is misconfigured`,
+        path: ['preset'],
+      });
+      return;
+    }
+    if (uniqueExpected.size !== expected.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Preset ${value.preset} has duplicate slot ids`,
         path: ['preset'],
       });
       return;

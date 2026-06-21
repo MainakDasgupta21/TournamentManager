@@ -419,6 +419,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
           <LineupPicker
             teamA={fixture.teamA}
             teamB={fixture.teamB}
+            sport={tournament.sportType}
             rosterByTeam={rosterByTeam}
             value={lineups}
             onChange={setLineups}

@@ -49,8 +49,9 @@ const footballStatsSchema = new mongoose.Schema(
 
 /**
  * Optional roster. `role` stores either a cricket role (batsman/bowler/...) or
- * a football position (GK/DEF/MID/FWD); the controller validates the value
- * against the tournament's sport, so a single field serves both sports.
+ * a football position (detailed tactical roles, with legacy coarse values
+ * accepted during transition); the controller validates the value against the
+ * tournament's sport, so a single field serves both sports.
  */
 const playerSchema = new mongoose.Schema(
   {

@@ -45,8 +45,10 @@ export default function FormationEditor({
   const playersById = useMemo(() => playerMapById(roster), [roster]);
   const assigned = useMemo(() => new Set(assignedFormationPlayerIds(formation)), [formation]);
 
-  const [activePlayerId, setActivePlayerId] = useState(null);
-  const [draggingPlayerId, setDraggingPlayerId] = useState(null);
+  const [activePick, setActivePick] = useState(null); // { playerId, sourceSlotId|null }
+  const [draggingPick, setDraggingPick] = useState(null); // { playerId, sourceSlotId|null }
+  const [hoveredSlotId, setHoveredSlotId] = useState(null);
+  const [benchDropActive, setBenchDropActive] = useState(false);
 
   const bench = useMemo(
     () =>
@@ -62,10 +64,16 @@ export default function FormationEditor({
   );
 
   const canAssign = !disabled && typeof onChange === 'function';
+  const activePlayer = activePick?.playerId ? playersById[String(activePick.playerId)] : null;
 
-  const assignPlayer = (slotId, playerId) => {
-    if (!canAssign) return;
-    onChange(setFormationSlotPlayer(formation, slotId, playerId));
+  const assignPlayer = (slotId, pick) => {
+    if (!canAssign || !pick?.playerId) return;
+    onChange(
+      setFormationSlotPlayer(formation, slotId, pick.playerId, {
+        fromSlotId: pick.sourceSlotId ?? null,
+        swap: true,
+      })
+    );
   };
 
   const removePlayerFromPitch = (playerId) => {
@@ -73,41 +81,75 @@ export default function FormationEditor({
     onChange(clearFormationPlayer(formation, playerId));
   };
 
+  const clearInteractionState = () => {
+    setDraggingPick(null);
+    setHoveredSlotId(null);
+    setBenchDropActive(false);
+  };
+
   const onSlotClick = (slot) => {
     if (!canAssign) return;
-    if (activePlayerId) {
-      assignPlayer(slot.slot, activePlayerId);
-      setActivePlayerId(null);
+
+    if (activePick?.playerId) {
+      if (activePick.sourceSlotId === slot.slot) {
+        setActivePick(null);
+        return;
+      }
+      assignPlayer(slot.slot, activePick);
+      setActivePick(null);
       return;
     }
+
     if (slot.playerId) {
-      setActivePlayerId(String(slot.playerId));
+      setActivePick({ playerId: String(slot.playerId), sourceSlotId: slot.slot });
     }
   };
 
   const onPresetChange = (preset) => {
     if (!canAssign) return;
     onChange(remapFormationPreset(formation, preset));
-    setActivePlayerId(null);
+    setActivePick(null);
+    clearInteractionState();
+  };
+
+  const startDrag = (e, playerId, sourceSlotId = null) => {
+    if (!canAssign || !playerId) return;
+    const pid = String(playerId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/player-id', pid);
+    if (sourceSlotId) e.dataTransfer.setData('text/source-slot', sourceSlotId);
+    setDraggingPick({ playerId: pid, sourceSlotId });
+    setActivePick({ playerId: pid, sourceSlotId });
+  };
+
+  const resolveDropPayload = (e) => {
+    const dataPlayerId = e.dataTransfer?.getData('text/player-id') || '';
+    const dataSourceSlot = e.dataTransfer?.getData('text/source-slot') || '';
+    const playerId = dataPlayerId || draggingPick?.playerId || activePick?.playerId || null;
+    const sourceSlotId =
+      dataSourceSlot || draggingPick?.sourceSlotId || activePick?.sourceSlotId || null;
+    if (!playerId) return null;
+    return { playerId: String(playerId), sourceSlotId: sourceSlotId || null };
   };
 
   const onSlotDrop = (slotId, e) => {
     e.preventDefault();
     if (!canAssign) return;
-    const pid = e.dataTransfer.getData('text/player-id') || draggingPlayerId;
-    if (!pid) return;
-    assignPlayer(slotId, pid);
-    setDraggingPlayerId(null);
-    setActivePlayerId(null);
+    const payload = resolveDropPayload(e);
+    if (!payload) return;
+    assignPlayer(slotId, payload);
+    setActivePick(null);
+    clearInteractionState();
   };
 
   const onBenchDrop = (e) => {
     e.preventDefault();
     if (!canAssign) return;
-    const pid = e.dataTransfer.getData('text/player-id') || draggingPlayerId;
-    if (!pid) return;
-    removePlayerFromPitch(pid);
-    setDraggingPlayerId(null);
+    const payload = resolveDropPayload(e);
+    if (!payload?.playerId) return;
+    removePlayerFromPitch(payload.playerId);
+    if (activePick?.playerId === payload.playerId) setActivePick(null);
+    clearInteractionState();
   };
 
   const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
@@ -115,7 +157,7 @@ export default function FormationEditor({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+        <div className="space-y-1">
           <p className="text-sm font-semibold">{title}</p>
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
@@ -138,7 +180,8 @@ export default function FormationEditor({
               variant="ghost"
               size="sm"
               onClick={() => {
-                setActivePlayerId(null);
+                setActivePick(null);
+                clearInteractionState();
                 onChange(emptyFormation(formation.preset));
               }}
             >
@@ -147,6 +190,43 @@ export default function FormationEditor({
           )}
         </div>
       </div>
+
+      {canAssign && activePick?.playerId && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs">
+          <span className="font-medium text-primary">
+            Selected:{' '}
+            {activePlayer
+              ? `${activePlayer.jerseyNumber != null ? `#${activePlayer.jerseyNumber} ` : ''}${shortName(activePlayer.name)}`
+              : 'Player'}
+          </span>
+          <span className="text-muted-foreground">
+            {activePick.sourceSlotId
+              ? 'Tap or drop onto another slot to swap/move.'
+              : 'Tap or drop onto a slot to assign.'}
+          </span>
+          {activePick.sourceSlotId && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => {
+                removePlayerFromPitch(activePick.playerId);
+                setActivePick(null);
+              }}
+            >
+              Move to bench
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-[11px]"
+            onClick={() => setActivePick(null)}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
 
       <div
         className={cn(
@@ -163,7 +243,11 @@ export default function FormationEditor({
         <AnimatePresence>
           {slots.map((slot) => {
             const player = slot.playerId ? playersById[String(slot.playerId)] : null;
-            const selected = activePlayerId && String(slot.playerId) === String(activePlayerId);
+            const sourceActive = activePick?.sourceSlotId === slot.slot;
+            const hoverTarget = hoveredSlotId === slot.slot && Boolean(draggingPick?.playerId);
+            const dragSource = draggingPick?.sourceSlotId === slot.slot;
+            const canPlaceHere = Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
+
             return (
               <motion.button
                 key={`${formation.preset}-${slot.slot}`}
@@ -174,31 +258,44 @@ export default function FormationEditor({
                 transition={{ duration: 0.18 }}
                 type="button"
                 draggable={Boolean(player) && canAssign}
-                onDragStart={(e) => {
-                  if (!player) return;
-                  setDraggingPlayerId(String(player._id));
-                  e.dataTransfer.setData('text/player-id', String(player._id));
+                onDragStart={(e) => player && startDrag(e, player._id, slot.slot)}
+                onDragEnd={clearInteractionState}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setHoveredSlotId(slot.slot);
                 }}
-                onDragEnd={() => setDraggingPlayerId(null)}
-                onDragOver={(e) => e.preventDefault()}
+                onDragLeave={() => {
+                  if (hoveredSlotId === slot.slot) setHoveredSlotId(null);
+                }}
                 onDrop={(e) => onSlotDrop(slot.slot, e)}
                 onClick={() => onSlotClick(slot)}
                 disabled={!canAssign}
                 className={cn(
                   'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px] transition-all',
+                  'relative',
                   SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
                   canAssign && 'surface-interactive',
-                  selected && 'ring-2 ring-primary',
-                  !player && 'opacity-90'
+                  sourceActive && 'ring-2 ring-primary',
+                  hoverTarget && 'ring-2 ring-primary/70',
+                  dragSource && 'opacity-70',
+                  !player && 'opacity-90',
+                  canPlaceHere && !player && 'border-dashed'
                 )}
                 style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
               >
+                {player && canAssign && (
+                  <span className="pointer-events-none absolute right-1 top-1 inline-flex rounded bg-background/40 p-0.5 text-muted-foreground/80">
+                    <GripVertical className="h-2.5 w-2.5" />
+                  </span>
+                )}
                 <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
                   {slot.label}
                 </p>
                 {player ? (
                   <>
-                    <p className="truncate text-[clamp(0.56rem,2.1vw,0.75rem)] font-semibold">{shortName(player.name)}</p>
+                    <p className="truncate text-[clamp(0.56rem,2.1vw,0.75rem)] font-semibold">
+                      {shortName(player.name)}
+                    </p>
                     <div className="mt-0.5 flex items-center gap-1 text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">
                       {player.jerseyNumber != null && (
                         <span className="rounded bg-background/50 px-1 py-0.5 tabular-nums">
@@ -208,6 +305,8 @@ export default function FormationEditor({
                       <span className="truncate">{player.role || 'Player'}</span>
                     </div>
                   </>
+                ) : canPlaceHere ? (
+                  <p className="text-[clamp(0.56rem,2vw,0.75rem)] font-medium text-primary">Drop / Tap</p>
                 ) : (
                   <p className="text-[clamp(0.56rem,2vw,0.75rem)] text-muted-foreground">Unassigned</p>
                 )}
@@ -218,16 +317,25 @@ export default function FormationEditor({
       </div>
 
       <div
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setBenchDropActive(true);
+        }}
+        onDragLeave={() => setBenchDropActive(false)}
         onDrop={onBenchDrop}
-        className="rounded-xl border border-border/75 bg-card/70 p-3"
+        className={cn(
+          'rounded-xl border border-border/75 bg-card/70 p-3 transition-colors',
+          benchDropActive && 'border-primary/40 bg-primary/5'
+        )}
       >
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Bench ({bench.length})
           </p>
           <p className="text-[11px] text-muted-foreground">
-            {canAssign ? 'Click a player then click a slot, or drag to a slot.' : 'Read-only'}
+            {canAssign
+              ? 'Desktop: drag to swap. Touch: tap a player, then tap target slot.'
+              : 'Read-only'}
           </p>
         </div>
         {!bench.length ? (
@@ -237,26 +345,27 @@ export default function FormationEditor({
         ) : (
           <div className="flex flex-wrap gap-2">
             {bench.map((player) => {
-              const active = String(activePlayerId) === String(player._id);
+              const active =
+                String(activePick?.playerId) === String(player._id) && !activePick?.sourceSlotId;
               return (
                 <motion.button
                   key={player._id}
                   layout
                   type="button"
+                  disabled={!canAssign}
                   draggable={canAssign}
-                  onDragStart={(e) => {
+                  onDragStart={(e) => canAssign && startDrag(e, player._id, null)}
+                  onDragEnd={clearInteractionState}
+                  onClick={() => {
                     if (!canAssign) return;
-                    setDraggingPlayerId(String(player._id));
-                    e.dataTransfer.setData('text/player-id', String(player._id));
+                    setActivePick((prev) =>
+                      String(prev?.playerId) === String(player._id) && !prev?.sourceSlotId
+                        ? null
+                        : { playerId: String(player._id), sourceSlotId: null }
+                    );
                   }}
-                  onDragEnd={() => setDraggingPlayerId(null)}
-                  onClick={() =>
-                    setActivePlayerId((prev) =>
-                      String(prev) === String(player._id) ? null : String(player._id)
-                    )
-                  }
                   className={cn(
-                    'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                    'flex min-h-9 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
                     active
                       ? 'border-primary/55 bg-primary/15 text-primary'
                       : 'border-border/70 bg-secondary/60 hover:bg-secondary'

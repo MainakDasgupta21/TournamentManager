@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Plus, Trash2, Users, Shirt, X, Pencil, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { CRICKET_ROLES, FOOTBALL_POSITIONS, PLAYER_CATEGORIES, SPORTS } from '@tms/shared/constants';
+import {
+  CRICKET_ROLES,
+  FOOTBALL_POSITIONS,
+  PLAYER_CATEGORIES,
+  SPORTS,
+  footballPositionLabel,
+  normalizeFootballPosition,
+} from '@tms/shared/constants';
 import { useTeams, useTeam, useTeamMutations } from '@/hooks/queries';
 import { apiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -17,6 +24,7 @@ import FormationEditor from '@/components/admin/FormationEditor';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
 import { PageHeader } from '@/components/ui/page-header';
+import { assignedFormationPlayerIds } from '@/lib/formation';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -103,9 +111,15 @@ function AddTeamForm({ tournamentId, onDone }) {
 function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const normalizeRole = (role) => {
+    if (sport !== SPORTS.FOOTBALL) return role;
+    const normalized = normalizeFootballPosition(role);
+    if (!normalized) return roleOptions[0];
+    return roleOptions.includes(normalized) ? normalized : roleOptions[0];
+  };
   const blank = {
     name: player.name,
-    role: player.role,
+    role: normalizeRole(player.role),
     jerseyNumber: player.jerseyNumber ?? '',
     category: player.category ?? UNRATED,
   };
@@ -114,7 +128,7 @@ function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
   const startEdit = () => {
     setForm({
       name: player.name,
-      role: player.role,
+      role: normalizeRole(player.role),
       jerseyNumber: player.jerseyNumber ?? '',
       category: player.category ?? UNRATED,
     });
@@ -126,7 +140,7 @@ function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
     setSaving(true);
     const ok = await onUpdate(player._id, {
       name: form.name.trim(),
-      role: form.role,
+      role: normalizeRole(form.role),
       // Empty leaves the number unchanged (the schema can't store null).
       jerseyNumber: form.jerseyNumber === '' ? undefined : Number(form.jerseyNumber),
       category: toCategoryPayload(form.category),
@@ -147,7 +161,11 @@ function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
           <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
             <SelectTrigger aria-label="Position"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {roleOptions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {sport === SPORTS.FOOTBALL ? `${r} - ${footballPositionLabel(r)}` : r}
+                    </SelectItem>
+                  ))}
             </SelectContent>
           </Select>
           <CategorySelect
@@ -185,7 +203,13 @@ function PlayerRow({ player, sport, roleOptions, onUpdate, onRemove }) {
           <PlayerCategoryBadge category={player.category} size="xs" />
         </div>
         <p className="truncate text-xs text-muted-foreground">
-          {player.role && <span className="uppercase tracking-wider">{player.role}</span>}
+          {player.role && (
+            <span className="tracking-wide">
+              {sport === SPORTS.FOOTBALL
+                ? `${normalizeFootballPosition(player.role)} - ${footballPositionLabel(player.role)}`
+                : player.role}
+            </span>
+          )}
           {player.role && ' · '}
           {playerStatSummary(player, sport)}
         </p>
@@ -225,6 +249,10 @@ function RosterDialog({ tournamentId, team, sport }) {
     () => JSON.stringify(formationDraft) !== JSON.stringify(savedFormation),
     [formationDraft, savedFormation]
   );
+  const assignedFormationCount = useMemo(
+    () => assignedFormationPlayerIds(formationDraft).length,
+    [formationDraft]
+  );
 
   const onUpdatePlayer = async (playerId, body) => {
     try {
@@ -244,7 +272,7 @@ function RosterDialog({ tournamentId, team, sport }) {
         teamId: team._id,
         body: {
           name: form.name,
-          role: form.role,
+          role: isFootball ? normalizeFootballPosition(form.role) : form.role,
           jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
           category: toCategoryPayload(form.category),
         },
@@ -298,7 +326,13 @@ function RosterDialog({ tournamentId, team, sport }) {
                   <Label className="text-xs">Position</Label>
                   <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{roleOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {roleOptions.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {isFootball ? `${r} - ${footballPositionLabel(r)}` : r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
@@ -330,6 +364,10 @@ function RosterDialog({ tournamentId, team, sport }) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">Football only</Badge>
+                <Badge variant={assignedFormationCount === 11 ? 'success' : 'secondary'}>
+                  XI assigned: {assignedFormationCount}/11
+                </Badge>
+                {formationDirty && <Badge variant="accent">Unsaved changes</Badge>}
                 <p className="text-xs text-muted-foreground">
                   This is the team default; match overrides can be set while entering match results.
                 </p>
@@ -355,13 +393,18 @@ function RosterDialog({ tournamentId, team, sport }) {
               </div>
             </div>
 
+            <p className="rounded-lg border border-border/60 bg-secondary/35 px-3 py-2 text-xs text-muted-foreground">
+              Drag a player onto another occupied slot to swap instantly. On touch devices, tap a
+              player, then tap a tactical slot to place.
+            </p>
+
             <FormationEditor
               roster={players}
               value={formationDraft}
               onChange={setFormationDraft}
               disabled={updateFormation.isPending}
               title="Default team formation"
-              description="Use drag-and-drop or click-to-assign for smooth tactical setup."
+              description="Build your primary tactical shape for this team (preset + slot assignments)."
             />
           </TabsContent>
         </Tabs>

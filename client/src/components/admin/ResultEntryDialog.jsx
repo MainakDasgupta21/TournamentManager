@@ -209,6 +209,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
       <LineupPicker
         teamA={teamA}
         teamB={teamB}
+        sport={SPORTS.CRICKET}
         rosterByTeam={rosterByTeam}
         value={lineups}
         onChange={setLineups}
@@ -314,6 +315,7 @@ function FootballForm({
       <LineupPicker
         teamA={teamA}
         teamB={teamB}
+        sport={SPORTS.FOOTBALL}
         rosterByTeam={rosterByTeam}
         value={lineups}
         onChange={setLineups}

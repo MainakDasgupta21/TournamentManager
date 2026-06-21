@@ -2,10 +2,13 @@
  * Team of the Tournament (Module 8). Auto-picks a balanced best XI from the
  * cached player stats, fully client-side and transparent:
  *   - Cricket: 4 batters, 2 all-rounders, 1 wicketkeeper, 4 bowlers.
- *   - Football: a 4-3-3 (1 GK, 4 DEF, 3 MID, 3 FWD).
+ *   - Football: a 4-3-3 (1 GK, 4 DEF, 3 MID, 3 FWD), with detailed roles
+ *     mapped into these tactical lines.
  * Role slots are filled by the relevant score; any short-fall is topped up from
  * the best remaining performers so we always return up to 11.
  */
+
+import { footballPositionGroup, normalizeFootballPosition } from '@tms/shared/constants';
 
 const round = (n, d = 1) => (Number.isFinite(n) ? Number(n.toFixed(d)) : 0);
 
@@ -97,6 +100,8 @@ function orderCricket(list) {
 /* ------------------------------- Football ------------------------------- */
 
 function footballCandidate(p) {
+  const normalizedRole = normalizeFootballPosition(p.role);
+  const roleGroup = footballPositionGroup(normalizedRole);
   const f = p.stats?.football ?? {};
   const goals = f.goals ?? 0;
   const assists = f.assists ?? 0;
@@ -112,7 +117,8 @@ function footballCandidate(p) {
   const gkScore = cleanSheets * 5 + appearances - conceded * 0.5 - discipline;
 
   return {
-    player: project(p),
+    player: { ...project(p), role: normalizedRole || p.role },
+    roleGroup,
     played: appearances > 0 || goals > 0 || assists > 0 || cleanSheets > 0,
     goals, assists, appearances, cleanSheets,
     attack, defScore, gkScore, impact: attack,
@@ -133,9 +139,9 @@ function bestElevenFootball(players) {
   const taken = new Set();
   const picked = [];
 
-  const grab = (slot, n, role, scoreKey) => {
+  const grab = (slot, n, roleGroup, scoreKey) => {
     const ranked = pool
-      .filter((c) => !taken.has(c.player._id) && c.player.role === role)
+      .filter((c) => !taken.has(c.player._id) && c.roleGroup === roleGroup)
       .sort((a, b) => b[scoreKey] - a[scoreKey]);
     for (const c of ranked.slice(0, n)) {
       taken.add(c.player._id);
@@ -155,7 +161,7 @@ function bestElevenFootball(players) {
     for (const c of rest) {
       if (picked.length >= 11) break;
       taken.add(c.player._id);
-      const slot = c.player.role && c.player.role !== 'GK' ? c.player.role : 'MID';
+      const slot = c.roleGroup || 'MID';
       picked.push({ ...c.player, slot, reason: footballReason(c, slot), _impact: c.attack });
     }
   }

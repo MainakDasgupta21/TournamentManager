@@ -48,13 +48,56 @@ export function assignedFormationPlayerIds(formation) {
   ];
 }
 
-export function setFormationSlotPlayer(formation, slotId, playerId) {
+function normalizePlayerId(playerId) {
+  return playerId == null ? null : String(playerId);
+}
+
+function slotIdForPlayer(slots, playerId) {
+  const pid = normalizePlayerId(playerId);
+  if (!pid) return null;
+  return slots.find((slot) => String(slot.playerId) === pid)?.slot ?? null;
+}
+
+export function swapFormationSlots(formation, fromSlotId, toSlotId) {
   const current = normalizeFormation(formation);
-  const pid = playerId == null ? null : String(playerId);
+  if (!fromSlotId || !toSlotId || fromSlotId === toSlotId) return current;
+  const from = current.slots.find((slot) => slot.slot === fromSlotId);
+  const to = current.slots.find((slot) => slot.slot === toSlotId);
+  if (!from || !to) return current;
+  const fromPlayerId = normalizePlayerId(from.playerId);
+  const toPlayerId = normalizePlayerId(to.playerId);
+  return {
+    preset: current.preset,
+    slots: current.slots.map((slot) => {
+      if (slot.slot === fromSlotId) return { ...slot, playerId: toPlayerId };
+      if (slot.slot === toSlotId) return { ...slot, playerId: fromPlayerId };
+      return { ...slot, playerId: slot.playerId ?? null };
+    }),
+  };
+}
+
+export function setFormationSlotPlayer(formation, slotId, playerId, options = {}) {
+  const current = normalizeFormation(formation);
+  const pid = normalizePlayerId(playerId);
+  const target = current.slots.find((slot) => slot.slot === slotId);
+  if (!target) return current;
+
+  const sourceSlotId = options.fromSlotId ?? slotIdForPlayer(current.slots, pid);
+  const targetPlayerId = normalizePlayerId(target.playerId);
+  const canSwap =
+    Boolean(options.swap ?? true) &&
+    Boolean(sourceSlotId) &&
+    sourceSlotId !== slotId &&
+    Boolean(targetPlayerId) &&
+    targetPlayerId !== pid;
+
   return {
     preset: current.preset,
     slots: current.slots.map((slot) => {
       if (slot.slot === slotId) return { ...slot, playerId: pid };
+      if (canSwap && slot.slot === sourceSlotId) {
+        return { ...slot, playerId: targetPlayerId };
+      }
       if (pid && String(slot.playerId) === pid) return { ...slot, playerId: null };
       return { ...slot, playerId: slot.playerId ?? null };
     }),

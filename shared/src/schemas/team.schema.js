@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CRICKET_ROLES, FOOTBALL_POSITIONS, PLAYER_CATEGORIES } from '../constants.js';
+import { CRICKET_ROLES, FOOTBALL_POSITION_VALUES, PLAYER_CATEGORIES } from '../constants.js';
 import { hexColor, imageAssetUrl, nonEmptyString, objectId } from './common.js';
 import { footballFormationSchema } from './formation.schema.js';
 
@@ -37,7 +37,7 @@ export const playerSchema = z.object({
   body: z.object({
     name: nonEmptyString.max(120),
     role: z
-      .enum([...CRICKET_ROLES, ...FOOTBALL_POSITIONS])
+      .enum([...CRICKET_ROLES, ...FOOTBALL_POSITION_VALUES])
       .optional(),
     jerseyNumber: z.number().int().min(0).max(999).optional(),
     // Manually-assigned tier (S++ … D). `null` clears it back to "Unrated".

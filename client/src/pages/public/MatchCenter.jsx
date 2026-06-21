@@ -323,7 +323,7 @@ export default function MatchCenter() {
               <BarChart3 className="h-4 w-4 text-primary" /> Formation
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 lg:grid-cols-2">
+          <CardContent className="grid gap-4 xl:grid-cols-2">
             <FormationBoard
               compact
               formation={effectiveFormationA}

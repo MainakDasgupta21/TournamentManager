@@ -12,14 +12,21 @@ import { emitToTournament, EVENTS } from '../socket/index.js';
 import {
   SPORTS,
   CRICKET_ROLES,
-  FOOTBALL_POSITIONS,
+  FOOTBALL_POSITION_VALUES,
   FOOTBALL_FORMATION_PRESETS,
   FIXTURE_STATUS,
+  normalizeFootballPosition,
 } from '@tms/shared/constants';
 
 /** Roles valid for the tournament's sport. */
 function allowedRoles(sport) {
-  return sport === SPORTS.CRICKET ? CRICKET_ROLES : FOOTBALL_POSITIONS;
+  return sport === SPORTS.CRICKET ? CRICKET_ROLES : FOOTBALL_POSITION_VALUES;
+}
+
+function normalizeRoleForSport(sport, role) {
+  if (!role) return role;
+  if (sport !== SPORTS.FOOTBALL) return role;
+  return normalizeFootballPosition(role) || role;
 }
 
 const id = (v) => (v == null ? null : String(v));
@@ -231,7 +238,7 @@ export const addPlayer = asyncHandler(async (req, res) => {
   });
   if (!team) throw ApiError.notFound('Team not found');
 
-  const { role } = req.body;
+  const role = normalizeRoleForSport(req.tournament.sportType, req.body.role);
   if (role && !allowedRoles(req.tournament.sportType).includes(role)) {
     throw ApiError.badRequest(
       `Invalid role for ${req.tournament.sportType}. Allowed: ${allowedRoles(
@@ -242,6 +249,7 @@ export const addPlayer = asyncHandler(async (req, res) => {
 
   const player = await Player.create({
     ...req.body,
+    role,
     teamId: team._id,
     tournamentId: req.tournament._id,
   });
@@ -249,15 +257,18 @@ export const addPlayer = asyncHandler(async (req, res) => {
 });
 
 export const updatePlayer = asyncHandler(async (req, res) => {
-  if (req.body.role && !allowedRoles(req.tournament.sportType).includes(req.body.role)) {
+  const nextRole =
+    req.body.role === undefined ? undefined : normalizeRoleForSport(req.tournament.sportType, req.body.role);
+  if (nextRole && !allowedRoles(req.tournament.sportType).includes(nextRole)) {
     throw ApiError.badRequest(`Invalid role for ${req.tournament.sportType}`);
   }
+  const updateBody = req.body.role === undefined ? req.body : { ...req.body, role: nextRole };
   // Scope to the team in the path too: a player is a nested resource of its
   // team, so PATCH /teams/:teamId/players/:playerId must not edit a player that
   // belongs to a different team (even within the same tournament).
   const player = await Player.findOneAndUpdate(
     { _id: req.params.playerId, teamId: req.params.teamId, tournamentId: req.tournament._id },
-    { $set: req.body },
+    { $set: updateBody },
     { new: true }
   );
   if (!player) throw ApiError.notFound('Player not found');
