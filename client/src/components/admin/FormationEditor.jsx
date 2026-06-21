@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { GripVertical, RotateCcw, Sparkles } from 'lucide-react';
 import { FOOTBALL_FORMATION_PRESET_VALUES, normalizeFootballPosition } from '@tms/shared/constants';
 import {
@@ -254,7 +254,7 @@ export default function FormationEditor({
           // Ignore release errors when capture is already gone.
         }
       }
-      clearLayoutState({ preserveNode: true });
+      clearLayoutState();
     };
 
     window.addEventListener('pointermove', onMove);
@@ -401,92 +401,86 @@ export default function FormationEditor({
         <div className="pointer-events-none absolute bottom-3 left-1/2 h-[12%] w-[22%] -translate-x-1/2 rounded-t-xl border border-b-0 border-white/20" />
         <div className="pointer-events-none absolute top-3 left-1/2 h-[12%] w-[22%] -translate-x-1/2 rounded-b-xl border border-t-0 border-white/20" />
 
-        <AnimatePresence>
-          {slots.map((slot) => {
-            const player = slot.playerId ? playersById[String(slot.playerId)] : null;
-            const sourceActive = activePick?.sourceSlotId === slot.slot;
-            const hoverTarget =
-              !editingPositions && hoveredSlotId === slot.slot && Boolean(draggingPick?.playerId);
-            const dragSource = draggingPick?.sourceSlotId === slot.slot;
-            const canPlaceHere =
-              !editingPositions && Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
-            const isLayoutDragging = layoutDrag?.slotId === slot.slot;
+        {slots.map((slot) => {
+          const player = slot.playerId ? playersById[String(slot.playerId)] : null;
+          const sourceActive = activePick?.sourceSlotId === slot.slot;
+          const hoverTarget =
+            !editingPositions && hoveredSlotId === slot.slot && Boolean(draggingPick?.playerId);
+          const dragSource = draggingPick?.sourceSlotId === slot.slot;
+          const canPlaceHere =
+            !editingPositions && Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
+          const isLayoutDragging = layoutDrag?.slotId === slot.slot;
 
-            return (
-              <motion.button
-                ref={setSlotNodeRef(slot.slot)}
-                key={`${formation.preset}-${slot.slot}`}
-                layout={!editingPositions}
-                initial={editingPositions ? false : { opacity: 0, scale: 0.92 }}
-                animate={editingPositions ? undefined : { opacity: 1, scale: 1 }}
-                exit={editingPositions ? undefined : { opacity: 0, scale: 0.9 }}
-                transition={editingPositions ? { duration: 0 } : { duration: 0.18 }}
-                type="button"
-                draggable={Boolean(player) && canAssign && !editingPositions}
-                onDragStart={(e) => !editingPositions && player && startDrag(e, player._id, slot.slot)}
-                onDragEnd={clearInteractionState}
-                onDragOver={(e) => {
-                  if (editingPositions) return;
-                  e.preventDefault();
-                  setHoveredSlotId(slot.slot);
-                }}
-                onDragLeave={() => {
-                  if (editingPositions) return;
-                  if (hoveredSlotId === slot.slot) setHoveredSlotId(null);
-                }}
-                onDrop={(e) => onSlotDrop(slot.slot, e)}
-                onClick={() => onSlotClick(slot)}
-                onPointerDown={(e) => startSlotPositionEdit(slot, e)}
-                disabled={!canAssign}
-                className={cn(
-                  'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px]',
-                  SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
-                  sourceActive && 'ring-2 ring-primary',
-                  hoverTarget && 'ring-2 ring-primary/70',
-                  dragSource && 'opacity-70',
-                  isLayoutDragging && 'ring-2 ring-accent',
-                  !player && 'opacity-90',
-                  canPlaceHere && !player && 'border-dashed',
-                  editingPositions
-                    ? 'transition-none'
-                    : 'transition-[box-shadow,opacity,transform,background-color,border-color]',
-                  editingPositions && canAssign && 'cursor-grab active:cursor-grabbing touch-none select-none'
-                )}
-                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
-              >
-                {player && canAssign && (
-                  <span className="pointer-events-none absolute right-1 top-1 inline-flex rounded bg-background/40 p-0.5 text-muted-foreground/80">
-                    <GripVertical className="h-2.5 w-2.5" />
-                  </span>
-                )}
-                <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
-                  {slot.position || slot.label}
-                </p>
-                {player ? (
-                  <>
-                    <p className="truncate text-[clamp(0.56rem,2.1vw,0.75rem)] font-semibold">
-                      {shortName(player.name)}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-1 text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">
-                      {player.jerseyNumber != null && (
-                        <span className="rounded bg-background/50 px-1 py-0.5 tabular-nums">
-                          #{player.jerseyNumber}
-                        </span>
-                      )}
-                      <span className="truncate">
-                        {normalizeFootballPosition(player.role) || player.role || 'Player'}
+          return (
+            <motion.button
+              ref={setSlotNodeRef(slot.slot)}
+              key={slot.slot}
+              layout={false}
+              type="button"
+              draggable={Boolean(player) && canAssign && !editingPositions}
+              onDragStart={(e) => !editingPositions && player && startDrag(e, player._id, slot.slot)}
+              onDragEnd={clearInteractionState}
+              onDragOver={(e) => {
+                if (editingPositions) return;
+                e.preventDefault();
+                setHoveredSlotId(slot.slot);
+              }}
+              onDragLeave={() => {
+                if (editingPositions) return;
+                if (hoveredSlotId === slot.slot) setHoveredSlotId(null);
+              }}
+              onDrop={(e) => onSlotDrop(slot.slot, e)}
+              onClick={() => onSlotClick(slot)}
+              onPointerDown={(e) => startSlotPositionEdit(slot, e)}
+              disabled={!canAssign}
+              className={cn(
+                'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px]',
+                SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
+                sourceActive && 'ring-2 ring-primary',
+                hoverTarget && 'ring-2 ring-primary/70',
+                dragSource && 'opacity-70',
+                isLayoutDragging && 'ring-2 ring-accent',
+                !player && 'opacity-90',
+                canPlaceHere && !player && 'border-dashed',
+                editingPositions
+                  ? 'transition-none'
+                  : 'transition-[box-shadow,opacity,transform,background-color,border-color]',
+                editingPositions && canAssign && 'cursor-grab active:cursor-grabbing touch-none select-none'
+              )}
+              style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+            >
+              {player && canAssign && (
+                <span className="pointer-events-none absolute right-1 top-1 inline-flex rounded bg-background/40 p-0.5 text-muted-foreground/80">
+                  <GripVertical className="h-2.5 w-2.5" />
+                </span>
+              )}
+              <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
+                {slot.position || slot.label}
+              </p>
+              {player ? (
+                <>
+                  <p className="truncate text-[clamp(0.56rem,2.1vw,0.75rem)] font-semibold">
+                    {shortName(player.name)}
+                  </p>
+                  <div className="mt-0.5 flex items-center gap-1 text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">
+                    {player.jerseyNumber != null && (
+                      <span className="rounded bg-background/50 px-1 py-0.5 tabular-nums">
+                        #{player.jerseyNumber}
                       </span>
-                    </div>
-                  </>
-                ) : canPlaceHere ? (
-                  <p className="text-[clamp(0.56rem,2vw,0.75rem)] font-medium text-primary">Drop / Tap</p>
-                ) : (
-                  <p className="text-[clamp(0.56rem,2vw,0.75rem)] text-muted-foreground">Unassigned</p>
-                )}
-              </motion.button>
-            );
-          })}
-        </AnimatePresence>
+                    )}
+                    <span className="truncate">
+                      {normalizeFootballPosition(player.role) || player.role || 'Player'}
+                    </span>
+                  </div>
+                </>
+              ) : canPlaceHere ? (
+                <p className="text-[clamp(0.56rem,2vw,0.75rem)] font-medium text-primary">Drop / Tap</p>
+              ) : (
+                <p className="text-[clamp(0.56rem,2vw,0.75rem)] text-muted-foreground">Unassigned</p>
+              )}
+            </motion.button>
+          );
+        })}
       </div>
 
       <div

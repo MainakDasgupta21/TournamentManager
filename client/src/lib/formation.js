@@ -2,7 +2,6 @@ import {
   FOOTBALL_FORMATION_PRESETS,
   FOOTBALL_FORMATION_PRESET_VALUES,
   footballPositionLine,
-  inferFootballPitchPosition,
   normalizeFootballFormationSlots,
   normalizeFootballPosition,
 } from '@tms/shared/constants';
@@ -210,7 +209,8 @@ export function clearFormationPlayer(formation, playerId) {
 
 export function slotsWithMeta(formation) {
   const normalized = normalizeFormation(formation);
-  const bySlot = new Map(normalized.slots.map((slot) => [slot.slot, slot]));
+  const coherent = normalizePresetSlots(normalized.preset, normalized.slots);
+  const bySlot = new Map(coherent.map((slot) => [slot.slot, slot]));
   return formationTemplate(normalized.preset).map((meta) => {
     const raw = bySlot.get(meta.slot) ?? {
       slot: meta.slot,
@@ -221,7 +221,7 @@ export function slotsWithMeta(formation) {
     };
     const x = clampCoord(raw.x, meta.x);
     const y = clampCoord(raw.y, meta.y);
-    const position = normalizeFootballPosition(raw.position) || inferFootballPitchPosition(x, y);
+    const position = normalizeFootballPosition(raw.position) || 'CMF';
     return {
       ...meta,
       x,

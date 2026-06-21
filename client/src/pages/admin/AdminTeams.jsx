@@ -24,7 +24,7 @@ import FormationEditor from '@/components/admin/FormationEditor';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
 import { PageHeader } from '@/components/ui/page-header';
-import { assignedFormationPlayerIds } from '@/lib/formation';
+import { assignedFormationPlayerIds, normalizeFormation } from '@/lib/formation';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -412,7 +412,7 @@ function RosterDialog({ tournamentId, team, sport }) {
             <FormationEditor
               roster={players}
               value={formationDraft}
-              onChange={setFormationDraft}
+              onChange={(next) => setFormationDraft(normalizeFormation(next))}
               disabled={updateFormation.isPending}
               title="Default team formation"
               description="Build your primary tactical shape for this team (preset + slot assignments)."

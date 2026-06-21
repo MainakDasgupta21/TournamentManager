@@ -3,7 +3,7 @@ import {
   FOOTBALL_FORMATION_PRESETS,
   inferFootballFormationPositions,
 } from '@tms/shared/constants';
-import { normalizeFormation, remapFormationPreset } from '../../client/src/lib/formation.js';
+import { normalizeFormation, remapFormationPreset, slotsWithMeta } from '../../client/src/lib/formation.js';
 
 function bySlot(entries) {
   return Object.fromEntries(entries.map((entry) => [entry.slot, entry.position]));
@@ -78,5 +78,47 @@ describe('remapFormationPreset regressions', () => {
     const afterGK = remapped.slots.find((slot) => slot.slot === 'GK');
     expect(afterGK.x).toBe(beforeGK.x);
     expect(afterGK.y).toBe(beforeGK.y);
+  });
+});
+
+describe('formation display regressions', () => {
+  it('uses coherent whole-formation labels even when incoming positions are missing', () => {
+    const normalized = normalizeFormation({
+      preset: '3-5-2',
+      slots: (FOOTBALL_FORMATION_PRESETS['3-5-2'] ?? []).map((slot) => ({
+        slot: slot.slot,
+        x: slot.x,
+        y: slot.y,
+      })),
+    });
+    const withoutPositions = {
+      preset: normalized.preset,
+      slots: normalized.slots.map(({ slot, playerId, x, y }) => ({
+        slot,
+        playerId,
+        x,
+        y,
+      })),
+    };
+
+    const meta = slotsWithMeta(withoutPositions);
+    expect(meta.map((slot) => slot.position)).toEqual(normalized.slots.map((slot) => slot.position));
+  });
+
+  it('always returns one visible meta card per preset slot after repeated remaps', () => {
+    const base = normalizeFormation({
+      preset: '4-3-3',
+      slots: (FOOTBALL_FORMATION_PRESETS['4-3-3'] ?? []).map((slot, index) => ({
+        slot: slot.slot,
+        playerId: `p${index + 1}`,
+        x: slot.x,
+        y: slot.y,
+      })),
+    });
+    const remapped = remapFormationPreset(remapFormationPreset(base, '4-4-2'), '3-5-2');
+    const meta = slotsWithMeta(remapped);
+
+    expect(meta).toHaveLength(11);
+    expect(new Set(meta.map((slot) => slot.slot)).size).toBe(11);
   });
 });
