@@ -32,18 +32,12 @@ import {
   AUDIT_ENTITY,
   AUDIT_ACTION,
   FOOTBALL_FORMATION_PRESETS,
-  inferFootballFormationPositions,
-  normalizeFootballPosition,
+  normalizeFootballFormationSlots,
 } from '@tms/shared/constants';
 
 const ACTION_BY_OP = { add: AUDIT_ACTION.CREATE, edit: AUDIT_ACTION.UPDATE, delete: AUDIT_ACTION.DELETE };
 const clone = (v) => (v == null ? null : JSON.parse(JSON.stringify(v)));
 const id = (v) => (v == null ? null : String(v));
-const clampCoord = (value, fallback) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.max(0, Math.min(100, n));
-};
 
 function formationPlayerIds(formation) {
   if (!formation?.slots?.length) return [];
@@ -58,28 +52,12 @@ function formationPlayerIds(formation) {
 
 function normalizeFootballFormation(formation) {
   if (!formation?.preset || !FOOTBALL_FORMATION_PRESETS[formation.preset]) return formation;
-  const template = FOOTBALL_FORMATION_PRESETS[formation.preset] ?? [];
-  const bySlot = new Map((formation.slots ?? []).map((slot) => [slot.slot, slot]));
-  const baseSlots = template.map((meta) => {
-    const raw = bySlot.get(meta.slot) ?? {};
-    const x = clampCoord(raw.x, meta.x);
-    const y = clampCoord(raw.y, meta.y);
-    return {
-      slot: meta.slot,
-      playerId: raw.playerId ?? null,
-      x,
-      y,
-      position: normalizeFootballPosition(raw.position) || null,
-    };
-  });
-  const inferred = inferFootballFormationPositions(baseSlots);
-  const byInferredSlot = new Map(inferred.map((slot) => [slot.slot, slot.position]));
   return {
     preset: formation.preset,
-    slots: baseSlots.map((slot) => ({
-      ...slot,
-      position: byInferredSlot.get(slot.slot) ?? slot.position ?? 'CMF',
-    })),
+    slots: normalizeFootballFormationSlots({
+      preset: formation.preset,
+      slots: formation.slots ?? [],
+    }),
   };
 }
 

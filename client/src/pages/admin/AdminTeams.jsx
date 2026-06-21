@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Plus, Trash2, Users, Shirt, X, Pencil, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -235,15 +235,12 @@ function RosterDialog({ tournamentId, team, sport }) {
   const blankForm = { name: '', role: roleOptions[0], jerseyNumber: '', category: UNRATED };
   const [form, setForm] = useState(blankForm);
   const [formationDraft, setFormationDraft] = useState(null);
+  const lastHydratedFormationTeamRef = useRef(null);
 
   const players = data?.players ?? [];
   const isFootball = sport === SPORTS.FOOTBALL;
   const savedFormation = data?.team?.defaultFormation ?? null;
-
-  useEffect(() => {
-    if (!isFootball) return;
-    setFormationDraft(savedFormation);
-  }, [isFootball, data?.team?._id, data?.team?.updatedAt]);
+  const teamId = data?.team?._id ? String(data.team._id) : null;
 
   const formationDirty = useMemo(
     () => JSON.stringify(formationDraft) !== JSON.stringify(savedFormation),
@@ -253,6 +250,19 @@ function RosterDialog({ tournamentId, team, sport }) {
     () => assignedFormationPlayerIds(formationDraft).length,
     [formationDraft]
   );
+
+  useEffect(() => {
+    if (!isFootball || !teamId) return;
+    const teamChanged = lastHydratedFormationTeamRef.current !== teamId;
+    if (teamChanged) {
+      lastHydratedFormationTeamRef.current = teamId;
+      setFormationDraft(savedFormation);
+      return;
+    }
+    if (!formationDirty) {
+      setFormationDraft(savedFormation);
+    }
+  }, [isFootball, teamId, savedFormation, formationDirty]);
 
   const onUpdatePlayer = async (playerId, body) => {
     try {

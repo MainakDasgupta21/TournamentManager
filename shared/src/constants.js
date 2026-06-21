@@ -183,6 +183,38 @@ function clampPitchPercent(value, fallback) {
   return Math.max(0, Math.min(100, n));
 }
 
+function slotHintPosition(slotId) {
+  const raw = typeof slotId === 'string' ? slotId.trim().toUpperCase() : '';
+  if (!raw) return '';
+  const withoutNumericSuffix = raw.replace(/\d+$/, '');
+  if (withoutNumericSuffix === 'CB') return 'LCB';
+  if (withoutNumericSuffix === 'ST') return 'CF';
+  return (
+    normalizeFootballPosition(withoutNumericSuffix) ||
+    normalizeFootballPosition(raw) ||
+    ''
+  );
+}
+
+function slotHintLine(slotId) {
+  const hinted = slotHintPosition(slotId);
+  return hinted ? footballPositionLine(hinted) : null;
+}
+
+function coordinateOutfieldLine(slot) {
+  if (slot.y >= 63) return 'def';
+  if (slot.y >= 33) return 'mid';
+  return 'fwd';
+}
+
+function classifyOutfieldLine(slot) {
+  const hintedLine = slotHintLine(slot.slot);
+  if (hintedLine === 'def' && slot.y >= 48) return 'def';
+  if (hintedLine === 'fwd' && slot.y <= 52) return 'fwd';
+  if (slot.y >= 56 && (slot.x <= 20 || slot.x >= 80) && hintedLine !== 'mid') return 'def';
+  return coordinateOutfieldLine(slot);
+}
+
 /**
  * Infer tactical football position from pitch coordinates (percent values).
  * y=100 is closest to own goal, y=0 is highest attacking line.
@@ -221,6 +253,71 @@ function assignMidfieldRole(slot) {
   return 'CMF';
 }
 
+function assignDefensiveRoles(defenders, roles) {
+  const sorted = [...defenders].sort((a, b) => a.x - b.x || b.y - a.y);
+  if (!sorted.length) return;
+  if (sorted.length === 1) {
+    roles.set(sorted[0].slot, 'LCB');
+    return;
+  }
+  if (sorted.length === 2) {
+    roles.set(sorted[0].slot, 'LCB');
+    roles.set(sorted[1].slot, 'RCB');
+    return;
+  }
+  if (sorted.length === 3) {
+    const [left, center, right] = sorted;
+    roles.set(left.slot, 'LCB');
+    roles.set(right.slot, 'RCB');
+    roles.set(center.slot, center.x < 50 ? 'LCB' : 'RCB');
+    return;
+  }
+
+  const left = sorted[0];
+  const right = sorted[sorted.length - 1];
+  roles.set(left.slot, 'LB');
+  roles.set(right.slot, 'RB');
+
+  const middle = sorted.slice(1, -1);
+  if (!middle.length) return;
+  if (middle.length === 1) {
+    roles.set(middle[0].slot, middle[0].x <= 50 ? 'LCB' : 'RCB');
+    return;
+  }
+
+  let leftCount = 0;
+  let rightCount = 0;
+  middle.forEach((slot, index) => {
+    if (index === 0) {
+      roles.set(slot.slot, 'LCB');
+      leftCount += 1;
+      return;
+    }
+    if (index === middle.length - 1) {
+      roles.set(slot.slot, 'RCB');
+      rightCount += 1;
+      return;
+    }
+    if (slot.x < 50) {
+      roles.set(slot.slot, 'LCB');
+      leftCount += 1;
+      return;
+    }
+    if (slot.x > 50) {
+      roles.set(slot.slot, 'RCB');
+      rightCount += 1;
+      return;
+    }
+    if (leftCount < rightCount) {
+      roles.set(slot.slot, 'LCB');
+      leftCount += 1;
+    } else {
+      roles.set(slot.slot, 'RCB');
+      rightCount += 1;
+    }
+  });
+}
+
 /**
  * Infer a coherent tactical label set for the whole formation.
  * This avoids per-slot threshold artifacts (e.g. duplicated random SS/CMF).
@@ -233,7 +330,14 @@ export function inferFootballFormationPositions(slots = []) {
   }));
   if (!normalized.length) return [];
 
-  const gkCandidate = normalized.reduce((best, cur) => (cur.y > best.y ? cur : best), normalized[0]);
+  const hintedGoalkeeper = normalized.find((slot) => slotHintLine(slot.slot) === 'gk');
+  const deepGoalkeeper = normalized
+    .filter((slot) => slot.y >= 80)
+    .sort((a, b) => b.y - a.y)[0];
+  const gkCandidate =
+    hintedGoalkeeper ??
+    deepGoalkeeper ??
+    normalized.reduce((best, cur) => (cur.y > best.y ? cur : best), normalized[0]);
   const roles = new Map([[gkCandidate.slot, 'GK']]);
   const outfield = normalized.filter((slot) => slot.slot !== gkCandidate.slot);
 
@@ -241,35 +345,14 @@ export function inferFootballFormationPositions(slots = []) {
   const mid = [];
   const fwd = [];
   for (const slot of outfield) {
-    if (slot.y >= 63) def.push(slot);
-    else if (slot.y >= 33) mid.push(slot);
+    const line = classifyOutfieldLine(slot);
+    if (line === 'def') def.push(slot);
+    else if (line === 'mid') mid.push(slot);
     else fwd.push(slot);
   }
 
   const byX = (arr) => [...arr].sort((a, b) => a.x - b.x || b.y - a.y);
-
-  if (def.length === 1) {
-    roles.set(def[0].slot, 'LCB');
-  } else if (def.length === 2) {
-    const [left, right] = byX(def);
-    roles.set(left.slot, 'LCB');
-    roles.set(right.slot, 'RCB');
-  } else if (def.length === 3) {
-    const [left, center, right] = byX(def);
-    roles.set(left.slot, 'LB');
-    roles.set(center.slot, 'LCB');
-    roles.set(right.slot, 'RB');
-  } else if (def.length >= 4) {
-    const sorted = byX(def);
-    const left = sorted[0];
-    const right = sorted[sorted.length - 1];
-    roles.set(left.slot, 'LB');
-    roles.set(right.slot, 'RB');
-    const middle = sorted.slice(1, -1);
-    const split = Math.ceil(middle.length / 2);
-    for (const slot of middle.slice(0, split)) roles.set(slot.slot, 'LCB');
-    for (const slot of middle.slice(split)) roles.set(slot.slot, 'RCB');
-  }
+  assignDefensiveRoles(def, roles);
 
   if (mid.length === 1) {
     roles.set(mid[0].slot, assignMidfieldRole(mid[0]));
@@ -332,6 +415,31 @@ export function inferFootballFormationPositions(slots = []) {
   return normalized.map((slot) => ({
     slot: slot.slot,
     position: roles.get(slot.slot) ?? inferFootballPitchPosition(slot.x, slot.y),
+  }));
+}
+
+/**
+ * Normalize a formation payload against preset anchors and infer coherent roles.
+ * Incoming `position` is treated as advisory only; coordinates are authoritative.
+ */
+export function normalizeFootballFormationSlots({ preset, slots = [] }) {
+  const template = FOOTBALL_FORMATION_PRESETS[preset] ?? [];
+  const bySlot = new Map((slots ?? []).map((slot) => [slot.slot, slot]));
+  const baseSlots = template.map((meta) => {
+    const raw = bySlot.get(meta.slot) ?? {};
+    return {
+      slot: meta.slot,
+      playerId: raw.playerId ?? null,
+      x: clampPitchPercent(raw.x, meta.x),
+      y: clampPitchPercent(raw.y, meta.y),
+      position: normalizeFootballPosition(raw.position) || null,
+    };
+  });
+  const inferred = inferFootballFormationPositions(baseSlots);
+  const byInferredSlot = new Map(inferred.map((slot) => [slot.slot, slot.position]));
+  return baseSlots.map((slot) => ({
+    ...slot,
+    position: byInferredSlot.get(slot.slot) ?? inferFootballPitchPosition(slot.x, slot.y),
   }));
 }
 

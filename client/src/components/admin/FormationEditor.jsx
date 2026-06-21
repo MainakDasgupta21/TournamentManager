@@ -439,9 +439,7 @@ export default function FormationEditor({
                 disabled={!canAssign}
                 className={cn(
                   'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px]',
-                  'relative',
                   SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
-                  canAssign && 'surface-interactive',
                   sourceActive && 'ring-2 ring-primary',
                   hoverTarget && 'ring-2 ring-primary/70',
                   dragSource && 'opacity-70',

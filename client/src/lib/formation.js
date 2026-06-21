@@ -1,9 +1,9 @@
 import {
   FOOTBALL_FORMATION_PRESETS,
   FOOTBALL_FORMATION_PRESET_VALUES,
-  inferFootballFormationPositions,
   footballPositionLine,
   inferFootballPitchPosition,
+  normalizeFootballFormationSlots,
   normalizeFootballPosition,
 } from '@tms/shared/constants';
 
@@ -19,29 +19,49 @@ function normalizePlayerId(playerId) {
   return playerId == null ? null : String(playerId);
 }
 
-function normalizeSlot(meta, rawSlot = {}) {
-  const x = clampCoord(rawSlot.x, meta.x);
-  const y = clampCoord(rawSlot.y, meta.y);
-  return {
-    slot: meta.slot,
-    playerId: rawSlot.playerId ?? null,
-    x,
-    y,
-    position: normalizeFootballPosition(rawSlot.position) || null,
-  };
+function normalizePresetSlots(preset, slots = []) {
+  return normalizeFootballFormationSlots({
+    preset,
+    slots,
+  });
 }
 
-function applyInferredPositions(slots) {
-  const inferred = inferFootballFormationPositions(slots);
-  const bySlot = new Map(inferred.map((slot) => [slot.slot, slot.position]));
-  return slots.map((slot) => {
-    const inferredPosition = bySlot.get(slot.slot);
-    const fallback = normalizeFootballPosition(slot.position) || inferFootballPitchPosition(slot.x, slot.y);
-    return {
-      ...slot,
-      position: inferredPosition ?? fallback,
+function remapUnmappedPlayers(nextSlots, template, leftovers) {
+  if (!leftovers.length) return nextSlots;
+  const result = nextSlots.map((slot) => ({ ...slot, playerId: normalizePlayerId(slot.playerId) }));
+  const openByLine = {
+    gk: [],
+    def: [],
+    mid: [],
+    fwd: [],
+  };
+
+  result.forEach((slot, index) => {
+    if (slot.playerId) return;
+    const line = template[index]?.line ?? 'mid';
+    if (openByLine[line]) openByLine[line].push(index);
+  });
+
+  const takeOpenIndex = (line) => {
+    if (line && openByLine[line]?.length) return openByLine[line].shift();
+    if (openByLine.gk.length) return openByLine.gk.shift();
+    if (openByLine.def.length) return openByLine.def.shift();
+    if (openByLine.mid.length) return openByLine.mid.shift();
+    if (openByLine.fwd.length) return openByLine.fwd.shift();
+    return null;
+  };
+
+  leftovers.forEach((leftover) => {
+    const preferredLine = footballPositionLine(leftover.position);
+    const index = takeOpenIndex(preferredLine);
+    if (index == null) return;
+    result[index] = {
+      ...result[index],
+      playerId: leftover.playerId,
     };
   });
+
+  return result;
 }
 
 export function formationTemplate(preset) {
@@ -49,10 +69,9 @@ export function formationTemplate(preset) {
 }
 
 export function emptyFormation(preset = DEFAULT_FOOTBALL_FORMATION_PRESET) {
-  const slots = formationTemplate(preset).map((meta) => normalizeSlot(meta));
   return {
     preset,
-    slots: applyInferredPositions(slots),
+    slots: normalizePresetSlots(preset),
   };
 }
 
@@ -60,23 +79,37 @@ export function normalizeFormation(value, fallbackPreset = DEFAULT_FOOTBALL_FORM
   if (!value || !value.preset || !FOOTBALL_FORMATION_PRESETS[value.preset]) {
     return emptyFormation(fallbackPreset);
   }
-  const template = formationTemplate(value.preset);
-  const existing = new Map((value.slots ?? []).map((slot) => [slot.slot, slot]));
-  const slots = template.map((meta) => normalizeSlot(meta, existing.get(meta.slot)));
   return {
     preset: value.preset,
-    slots: applyInferredPositions(slots),
+    slots: normalizePresetSlots(value.preset, value.slots ?? []),
   };
 }
 
 export function remapFormationPreset(value, nextPreset) {
   const current = normalizeFormation(value);
   const template = formationTemplate(nextPreset);
-  const currentBySlot = new Map(current.slots.map((slot) => [slot.slot, slot.playerId ?? null]));
-  const slots = template.map((meta) => normalizeSlot(meta, { playerId: currentBySlot.get(meta.slot) ?? null }));
+  const currentBySlot = new Map(current.slots.map((slot) => [slot.slot, slot]));
+  const slots = template.map((meta) => {
+    const raw = currentBySlot.get(meta.slot) ?? {};
+    return {
+      slot: meta.slot,
+      playerId: raw.playerId ?? null,
+      x: raw.x,
+      y: raw.y,
+      position: raw.position ?? null,
+    };
+  });
+  const placedPlayerIds = new Set(slots.map((slot) => normalizePlayerId(slot.playerId)).filter(Boolean));
+  const leftovers = current.slots
+    .map((slot) => ({
+      playerId: normalizePlayerId(slot.playerId),
+      position: slot.position,
+    }))
+    .filter((slot) => slot.playerId && !placedPlayerIds.has(slot.playerId));
+  const withReassignedPlayers = remapUnmappedPlayers(slots, template, leftovers);
   return {
     preset: nextPreset,
-    slots: applyInferredPositions(slots),
+    slots: normalizePresetSlots(nextPreset, withReassignedPlayers),
   };
 }
 
@@ -138,7 +171,7 @@ export function setFormationSlotPlayer(formation, slotId, playerId, options = {}
 
   return {
     preset: current.preset,
-    slots: applyInferredPositions(slots),
+    slots: normalizePresetSlots(current.preset, slots),
   };
 }
 
@@ -159,7 +192,7 @@ export function setFormationSlotCoords(formation, slotId, coords) {
   );
   return {
     preset: current.preset,
-    slots: applyInferredPositions(slots),
+    slots: normalizePresetSlots(current.preset, slots),
   };
 }
 
@@ -179,7 +212,13 @@ export function slotsWithMeta(formation) {
   const normalized = normalizeFormation(formation);
   const bySlot = new Map(normalized.slots.map((slot) => [slot.slot, slot]));
   return formationTemplate(normalized.preset).map((meta) => {
-    const raw = bySlot.get(meta.slot) ?? normalizeSlot(meta);
+    const raw = bySlot.get(meta.slot) ?? {
+      slot: meta.slot,
+      playerId: null,
+      x: meta.x,
+      y: meta.y,
+      position: null,
+    };
     const x = clampCoord(raw.x, meta.x);
     const y = clampCoord(raw.y, meta.y);
     const position = normalizeFootballPosition(raw.position) || inferFootballPitchPosition(x, y);
