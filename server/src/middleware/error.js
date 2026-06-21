@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError.js';
+import { isZodError, formatZodIssues } from '../utils/zodError.js';
 import { env } from '../config/env.js';
 
 /** 404 handler for unmatched routes. */
@@ -18,10 +18,10 @@ export function errorHandler(err, req, res, next) {
   let message = err.message ?? 'Internal server error';
   let details = err.details;
 
-  if (err instanceof ZodError) {
+  if (isZodError(err)) {
     statusCode = 422;
     message = 'Validation failed';
-    details = err.issues.map((i) => ({ path: i.path.join('.'), message: i.message }));
+    details = formatZodIssues(err);
   } else if (err instanceof mongoose.Error.ValidationError) {
     statusCode = 422;
     message = 'Validation failed';
@@ -46,7 +46,14 @@ export function errorHandler(err, req, res, next) {
   }
 
   if (statusCode >= 500) {
-    console.error('[error]', err);
+    // Log primitive strings only. Passing the raw error object to console.error
+    // routes it through util.inspect(), which can itself throw on unusual error
+    // shapes — that would crash this handler and leak a default HTML stack trace.
+    try {
+      console.error('[error]', String(err?.stack || err?.message || err));
+    } catch {
+      console.error('[error] (unprintable error object)');
+    }
   }
 
   const error = { message };

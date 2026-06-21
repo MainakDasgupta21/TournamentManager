@@ -1,5 +1,5 @@
-import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError.js';
+import { isZodError, formatZodIssues } from '../utils/zodError.js';
 
 /**
  * Validates `{ body, query, params }` against a Zod schema and replaces the
@@ -24,12 +24,8 @@ export const validate = (schema) => (req, res, next) => {
     }
     next();
   } catch (err) {
-    if (err instanceof ZodError) {
-      const details = err.issues.map((i) => ({
-        path: i.path.join('.'),
-        message: i.message,
-      }));
-      return next(ApiError.unprocessable('Validation failed', details));
+    if (isZodError(err)) {
+      return next(ApiError.unprocessable('Validation failed', formatZodIssues(err)));
     }
     next(err);
   }

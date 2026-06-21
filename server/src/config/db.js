@@ -8,6 +8,15 @@ import { env } from './env.js';
 export async function connectDB() {
   mongoose.set('strictQuery', true);
 
+  // Guardrail: a non-production environment pointed at a remote cluster is a
+  // common way to accidentally run tests/dev writes against production data.
+  if (!env.isProd && !/(?:@|\/\/)(localhost|127\.0\.0\.1|\[::1\])/.test(env.mongoUri)) {
+    console.warn(
+      `[db] WARNING: NODE_ENV=${env.nodeEnv} is connecting to a non-local database. ` +
+        'Point local dev/test at a local or throwaway DB to avoid touching production data.'
+    );
+  }
+
   mongoose.connection.on('connected', () => {
     console.log(`[db] connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
   });
