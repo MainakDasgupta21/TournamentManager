@@ -72,118 +72,147 @@ export const CRICKET_ROLES = Object.freeze([
   'wicketkeeper',
 ]);
 
-// Football-specific roster positions (detailed tactical vocabulary).
+// Football-specific roster positions (canonical tactical vocabulary).
 export const FOOTBALL_POSITIONS = Object.freeze([
-  'GK',
-  'LB',
-  'LCB',
-  'CB',
-  'RCB',
-  'RB',
-  'LWB',
-  'RWB',
-  'LDM',
-  'CDM',
-  'RDM',
-  'LCM',
-  'CM',
-  'RCM',
-  'LAM',
-  'CAM',
-  'RAM',
-  'LM',
-  'RM',
-  'LW',
   'CF',
-  'RW',
-  'ST',
+  'SS',
+  'LWF',
+  'RWF',
+  'CAM',
+  'DMF',
+  'RMF',
+  'CMF',
+  'LMF',
+  'LB',
+  'RB',
+  'LCB',
+  'RCB',
+  'GK',
 ]);
 
-// Legacy coarse football roles we still accept during transition.
-export const FOOTBALL_LEGACY_POSITIONS = Object.freeze(['DEF', 'MID', 'FWD']);
+// Backward-compatible aliases from legacy and earlier detailed values.
+export const FOOTBALL_POSITION_ALIASES = Object.freeze({
+  DEF: 'LCB',
+  MID: 'CMF',
+  FWD: 'CF',
+  FW: 'CF',
+  ST: 'CF',
+  LW: 'LWF',
+  RW: 'RWF',
+  LM: 'LMF',
+  RM: 'RMF',
+  CM: 'CMF',
+  LCM: 'CMF',
+  RCM: 'CMF',
+  CDM: 'DMF',
+  LDM: 'DMF',
+  RDM: 'DMF',
+  LAM: 'CAM',
+  RAM: 'CAM',
+  CB: 'LCB',
+  LWB: 'LB',
+  RWB: 'RB',
+});
 
 export const FOOTBALL_POSITION_VALUES = Object.freeze([
-  ...new Set([...FOOTBALL_POSITIONS, ...FOOTBALL_LEGACY_POSITIONS]),
+  ...new Set([...FOOTBALL_POSITIONS, ...Object.keys(FOOTBALL_POSITION_ALIASES)]),
 ]);
 
 export const FOOTBALL_POSITION_LABELS = Object.freeze({
-  GK: 'Goalkeeper',
-  LB: 'Left Back',
-  LCB: 'Left Center Back',
-  CB: 'Center Back',
-  RCB: 'Right Center Back',
-  RB: 'Right Back',
-  LWB: 'Left Wing Back',
-  RWB: 'Right Wing Back',
-  LDM: 'Left Defensive Midfielder',
-  CDM: 'Defensive Midfielder',
-  RDM: 'Right Defensive Midfielder',
-  LCM: 'Left Central Midfielder',
-  CM: 'Central Midfielder',
-  RCM: 'Right Central Midfielder',
-  LAM: 'Left Attacking Midfielder',
-  CAM: 'Attacking Midfielder',
-  RAM: 'Right Attacking Midfielder',
-  LM: 'Left Midfielder',
-  RM: 'Right Midfielder',
-  LW: 'Left Winger',
   CF: 'Center Forward',
-  RW: 'Right Winger',
-  ST: 'Striker',
-  DEF: 'Defender (Legacy)',
-  MID: 'Midfielder (Legacy)',
-  FWD: 'Forward (Legacy)',
+  SS: 'Second Striker',
+  LWF: 'Left Wing Forward',
+  RWF: 'Right Wing Forward',
+  CAM: 'Attacking Midfielder',
+  DMF: 'Defensive Midfielder',
+  RMF: 'Right Midfielder',
+  CMF: 'Central Midfielder',
+  LMF: 'Left Midfielder',
+  LB: 'Left Back',
+  RB: 'Right Back',
+  LCB: 'Left Center Back',
+  RCB: 'Right Center Back',
+  GK: 'Goalkeeper',
 });
 
 export const FOOTBALL_POSITION_GROUPS = Object.freeze({
   GK: 'GK',
   LB: 'DEF',
   LCB: 'DEF',
-  CB: 'DEF',
   RCB: 'DEF',
   RB: 'DEF',
-  LWB: 'DEF',
-  RWB: 'DEF',
-  LDM: 'MID',
-  CDM: 'MID',
-  RDM: 'MID',
-  LCM: 'MID',
-  CM: 'MID',
-  RCM: 'MID',
-  LAM: 'MID',
+  DMF: 'MID',
+  LMF: 'MID',
+  CMF: 'MID',
+  RMF: 'MID',
   CAM: 'MID',
-  RAM: 'MID',
-  LM: 'MID',
-  RM: 'MID',
-  LW: 'FWD',
+  LWF: 'FWD',
+  RWF: 'FWD',
+  SS: 'FWD',
   CF: 'FWD',
-  RW: 'FWD',
-  ST: 'FWD',
-  DEF: 'DEF',
-  MID: 'MID',
-  FWD: 'FWD',
-});
-
-export const FOOTBALL_LEGACY_POSITION_MAP = Object.freeze({
-  DEF: 'CB',
-  MID: 'CM',
-  FWD: 'ST',
 });
 
 export function normalizeFootballPosition(position) {
   const raw = typeof position === 'string' ? position.trim().toUpperCase() : '';
   if (!raw) return '';
-  return FOOTBALL_LEGACY_POSITION_MAP[raw] ?? raw;
+  return FOOTBALL_POSITION_ALIASES[raw] ?? raw;
 }
 
 export function footballPositionGroup(position) {
   const normalized = normalizeFootballPosition(position);
-  return FOOTBALL_POSITION_GROUPS[normalized] ?? FOOTBALL_POSITION_GROUPS[position] ?? null;
+  return FOOTBALL_POSITION_GROUPS[normalized] ?? null;
+}
+
+export function footballPositionLine(position) {
+  const group = footballPositionGroup(position);
+  if (group === 'GK') return 'gk';
+  if (group === 'DEF') return 'def';
+  if (group === 'MID') return 'mid';
+  if (group === 'FWD') return 'fwd';
+  return 'mid';
 }
 
 export function footballPositionLabel(position) {
   const normalized = normalizeFootballPosition(position);
-  return FOOTBALL_POSITION_LABELS[normalized] ?? FOOTBALL_POSITION_LABELS[position] ?? normalized ?? '';
+  return FOOTBALL_POSITION_LABELS[normalized] ?? normalized ?? '';
+}
+
+function clampPitchPercent(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
+/**
+ * Infer tactical football position from pitch coordinates (percent values).
+ * y=100 is closest to own goal, y=0 is highest attacking line.
+ */
+export function inferFootballPitchPosition(x, y) {
+  const px = clampPitchPercent(x, 50);
+  const py = clampPitchPercent(y, 50);
+
+  if (py >= 82) return 'GK';
+
+  if (py >= 66) {
+    if (px < 28) return 'LB';
+    if (px < 50) return 'LCB';
+    if (px < 72) return 'RCB';
+    return 'RB';
+  }
+
+  if (py >= 38) {
+    const centralBand = px >= 35 && px <= 65;
+    if (py >= 56 && centralBand) return 'DMF';
+    if (py <= 46 && centralBand) return 'CAM';
+    if (px < 30) return 'LMF';
+    if (px > 70) return 'RMF';
+    return 'CMF';
+  }
+
+  if (px < 32) return 'LWF';
+  if (px > 68) return 'RWF';
+  if (py < 20) return 'CF';
+  return 'SS';
 }
 
 /**

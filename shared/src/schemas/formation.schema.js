@@ -3,12 +3,16 @@ import {
   FOOTBALL_FORMATION_PRESETS,
   FOOTBALL_FORMATION_PRESET_VALUES,
   FOOTBALL_FORMATION_SLOT_COUNT,
+  FOOTBALL_POSITION_VALUES,
 } from '../constants.js';
 import { objectId } from './common.js';
 
 export const footballFormationSlotSchema = z.object({
   slot: z.string().trim().min(1).max(16),
   playerId: objectId.nullable().optional(),
+  x: z.number().min(0).max(100).optional(),
+  y: z.number().min(0).max(100).optional(),
+  position: z.enum(FOOTBALL_POSITION_VALUES).optional(),
 });
 
 /**

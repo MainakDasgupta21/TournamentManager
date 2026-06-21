@@ -1,10 +1,13 @@
 import mongoose from 'mongoose';
-import { FOOTBALL_FORMATION_PRESET_VALUES } from '@tms/shared/constants';
+import { FOOTBALL_FORMATION_PRESET_VALUES, FOOTBALL_POSITION_VALUES } from '@tms/shared/constants';
 
 const formationSlotSchema = new mongoose.Schema(
   {
     slot: { type: String, required: true, trim: true, maxlength: 16 },
     playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', default: null },
+    x: { type: Number, min: 0, max: 100, default: undefined },
+    y: { type: Number, min: 0, max: 100, default: undefined },
+    position: { type: String, enum: FOOTBALL_POSITION_VALUES, default: undefined },
   },
   { _id: false }
 );

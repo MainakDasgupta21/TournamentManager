@@ -170,8 +170,8 @@ export default function LineupPicker({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Override only this fixture. Drag to swap on desktop, or tap player then tap slot
-                on touch devices.
+                Override only this fixture. Use assign mode for player swaps and edit mode to drag
+                tactical cards freely on the pitch.
               </p>
 
               <div className="grid gap-3 xl:grid-cols-2">

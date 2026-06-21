@@ -31,11 +31,19 @@ import {
   TOURNAMENT_STATUS,
   AUDIT_ENTITY,
   AUDIT_ACTION,
+  FOOTBALL_FORMATION_PRESETS,
+  inferFootballPitchPosition,
+  normalizeFootballPosition,
 } from '@tms/shared/constants';
 
 const ACTION_BY_OP = { add: AUDIT_ACTION.CREATE, edit: AUDIT_ACTION.UPDATE, delete: AUDIT_ACTION.DELETE };
 const clone = (v) => (v == null ? null : JSON.parse(JSON.stringify(v)));
 const id = (v) => (v == null ? null : String(v));
+const clampCoord = (value, fallback) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+};
 
 function formationPlayerIds(formation) {
   if (!formation?.slots?.length) return [];
@@ -46,6 +54,36 @@ function formationPlayerIds(formation) {
         .filter(Boolean)
     ),
   ];
+}
+
+function normalizeFootballFormation(formation) {
+  if (!formation?.preset || !FOOTBALL_FORMATION_PRESETS[formation.preset]) return formation;
+  const template = FOOTBALL_FORMATION_PRESETS[formation.preset] ?? [];
+  const bySlot = new Map((formation.slots ?? []).map((slot) => [slot.slot, slot]));
+  return {
+    preset: formation.preset,
+    slots: template.map((meta) => {
+      const raw = bySlot.get(meta.slot) ?? {};
+      const x = clampCoord(raw.x, meta.x);
+      const y = clampCoord(raw.y, meta.y);
+      const position = normalizeFootballPosition(raw.position) || inferFootballPitchPosition(x, y);
+      return {
+        slot: meta.slot,
+        playerId: raw.playerId ?? null,
+        x,
+        y,
+        position,
+      };
+    }),
+  };
+}
+
+function normalizeFormationBySide(formationBySide) {
+  if (!formationBySide) return formationBySide;
+  const out = {};
+  if (formationBySide.teamA) out.teamA = normalizeFootballFormation(formationBySide.teamA);
+  if (formationBySide.teamB) out.teamB = normalizeFootballFormation(formationBySide.teamB);
+  return Object.keys(out).length ? out : undefined;
 }
 
 async function assertFootballFormationPlayers({ tournamentId, fixture, formationBySide }) {
@@ -374,12 +412,15 @@ export const submitResult = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Both teams must be assigned before entering a result');
   }
 
-  const { sportResult, winner } = resolveResult(req.tournament, fixture, req.body);
+  const { sportResult: resolvedResult, winner } = resolveResult(req.tournament, fixture, req.body);
+  let sportResult = resolvedResult;
   if (req.tournament.sportType === SPORTS.FOOTBALL) {
+    const normalizedFormation = normalizeFormationBySide(sportResult.formation);
+    sportResult = normalizedFormation ? { ...sportResult, formation: normalizedFormation } : sportResult;
     await assertFootballFormationPlayers({
       tournamentId: req.tournament._id,
       fixture,
-      formationBySide: sportResult.formation,
+      formationBySide: normalizedFormation,
     });
   }
 
@@ -475,13 +516,15 @@ export const liveUpdate = asyncHandler(async (req, res) => {
   if (!fixture) throw ApiError.notFound('Fixture not found');
 
   const sport = req.tournament.sportType;
-  const snapshot = sport === SPORTS.CRICKET ? req.body.cricket : req.body.football;
+  let snapshot = sport === SPORTS.CRICKET ? req.body.cricket : req.body.football;
   if (!snapshot) throw ApiError.badRequest(`Expected a "${sport}" live payload`);
   if (sport === SPORTS.FOOTBALL) {
+    const normalizedFormation = normalizeFormationBySide(snapshot.formation);
+    snapshot = normalizedFormation ? { ...snapshot, formation: normalizedFormation } : snapshot;
     await assertFootballFormationPlayers({
       tournamentId: req.tournament._id,
       fixture,
-      formationBySide: snapshot.formation,
+      formationBySide: normalizedFormation,
     });
   }
 
@@ -588,6 +631,10 @@ export const editFixtureEvents = asyncHandler(async (req, res) => {
         result[arrKey].splice(index, 1);
       }
     }
+  }
+
+  if (sport === SPORTS.FOOTBALL && result.formation) {
+    result.formation = normalizeFormationBySide(result.formation);
   }
 
   // Re-fold aggregates + re-resolve winner from the (unchanged) declared result.

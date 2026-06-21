@@ -394,8 +394,9 @@ function RosterDialog({ tournamentId, team, sport }) {
             </div>
 
             <p className="rounded-lg border border-border/60 bg-secondary/35 px-3 py-2 text-xs text-muted-foreground">
-              Drag a player onto another occupied slot to swap instantly. On touch devices, tap a
-              player, then tap a tactical slot to place.
+              Use <span className="font-medium text-foreground">Assign players</span> to build XI and
+              swap players, and <span className="font-medium text-foreground">Edit positions</span> to
+              drag tactical cards anywhere on the pitch (auto-labeled by location).
             </p>
 
             <FormationEditor

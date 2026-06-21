@@ -15,6 +15,7 @@ import {
   FOOTBALL_POSITION_VALUES,
   FOOTBALL_FORMATION_PRESETS,
   FIXTURE_STATUS,
+  inferFootballPitchPosition,
   normalizeFootballPosition,
 } from '@tms/shared/constants';
 
@@ -30,6 +31,34 @@ function normalizeRoleForSport(sport, role) {
 }
 
 const id = (v) => (v == null ? null : String(v));
+const clampCoord = (value, fallback) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+};
+
+function normalizeFormationSlot(meta, rawSlot = {}) {
+  const x = clampCoord(rawSlot.x, meta.x);
+  const y = clampCoord(rawSlot.y, meta.y);
+  const position = normalizeFootballPosition(rawSlot.position) || inferFootballPitchPosition(x, y);
+  return {
+    slot: meta.slot,
+    playerId: rawSlot.playerId ?? null,
+    x,
+    y,
+    position,
+  };
+}
+
+function normalizeFootballFormationPayload(formation) {
+  ensurePresetConfigured(formation?.preset);
+  const template = FOOTBALL_FORMATION_PRESETS[formation.preset] ?? [];
+  const bySlot = new Map((formation?.slots ?? []).map((slot) => [slot.slot, slot]));
+  return {
+    preset: formation.preset,
+    slots: template.map((meta) => normalizeFormationSlot(meta, bySlot.get(meta.slot))),
+  };
+}
 
 function assignedFormationPlayerIds(formation) {
   if (!formation?.slots?.length) return [];
@@ -47,10 +76,14 @@ function stripFormationPlayer(formation, playerId) {
   const pid = id(playerId);
   return {
     preset: formation.preset,
-    slots: formation.slots.map((slot) => ({
-      slot: slot.slot,
-      playerId: id(slot.playerId) === pid ? null : slot.playerId ?? null,
-    })),
+    slots: formation.slots.map((slot) => {
+      const base = typeof slot?.toObject === 'function' ? slot.toObject() : { ...slot };
+      return {
+        ...base,
+        slot: slot.slot,
+        playerId: id(slot.playerId) === pid ? null : slot.playerId ?? null,
+      };
+    }),
   };
 }
 
@@ -170,14 +203,14 @@ export const updateTeamFormation = asyncHandler(async (req, res) => {
     return sendSuccess(res, { message: 'Team formation cleared', data: { team } });
   }
 
-  ensurePresetConfigured(defaultFormation.preset);
+  const normalizedFormation = normalizeFootballFormationPayload(defaultFormation);
   await assertFormationPlayersBelongToTeam({
-    formation: defaultFormation,
+    formation: normalizedFormation,
     team,
     tournamentId: req.tournament._id,
   });
 
-  team.defaultFormation = defaultFormation;
+  team.defaultFormation = normalizedFormation;
   await team.save();
   return sendSuccess(res, { message: 'Team formation updated', data: { team } });
 });

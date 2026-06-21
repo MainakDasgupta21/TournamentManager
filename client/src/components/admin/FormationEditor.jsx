@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GripVertical, RotateCcw, Sparkles } from 'lucide-react';
-import { FOOTBALL_FORMATION_PRESET_VALUES } from '@tms/shared/constants';
+import { FOOTBALL_FORMATION_PRESET_VALUES, normalizeFootballPosition } from '@tms/shared/constants';
 import {
   emptyFormation,
   normalizeFormation,
   remapFormationPreset,
   setFormationSlotPlayer,
+  setFormationSlotCoords,
   clearFormationPlayer,
   assignedFormationPlayerIds,
   slotsWithMeta,
@@ -44,11 +45,20 @@ export default function FormationEditor({
   const slots = useMemo(() => slotsWithMeta(formation), [formation]);
   const playersById = useMemo(() => playerMapById(roster), [roster]);
   const assigned = useMemo(() => new Set(assignedFormationPlayerIds(formation)), [formation]);
+  const pitchRef = useRef(null);
 
+  const [mode, setMode] = useState('assign');
   const [activePick, setActivePick] = useState(null); // { playerId, sourceSlotId|null }
   const [draggingPick, setDraggingPick] = useState(null); // { playerId, sourceSlotId|null }
   const [hoveredSlotId, setHoveredSlotId] = useState(null);
   const [benchDropActive, setBenchDropActive] = useState(false);
+  const [layoutDrag, setLayoutDrag] = useState(null); // { slotId }
+  const [layoutPreview, setLayoutPreview] = useState({});
+  const layoutPreviewRef = useRef(layoutPreview);
+
+  useEffect(() => {
+    layoutPreviewRef.current = layoutPreview;
+  }, [layoutPreview]);
 
   const bench = useMemo(
     () =>
@@ -65,6 +75,7 @@ export default function FormationEditor({
 
   const canAssign = !disabled && typeof onChange === 'function';
   const activePlayer = activePick?.playerId ? playersById[String(activePick.playerId)] : null;
+  const editingPositions = mode === 'edit';
 
   const assignPlayer = (slotId, pick) => {
     if (!canAssign || !pick?.playerId) return;
@@ -81,14 +92,31 @@ export default function FormationEditor({
     onChange(clearFormationPlayer(formation, playerId));
   };
 
+  const toPitchCoords = (clientX, clientY) => {
+    const rect = pitchRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    return {
+      x: Math.max(0, Math.min(100, Number(x.toFixed(2)))),
+      y: Math.max(0, Math.min(100, Number(y.toFixed(2)))),
+    };
+  };
+
+  const clearLayoutState = () => {
+    setLayoutDrag(null);
+    setLayoutPreview({});
+  };
+
   const clearInteractionState = () => {
     setDraggingPick(null);
     setHoveredSlotId(null);
     setBenchDropActive(false);
+    clearLayoutState();
   };
 
   const onSlotClick = (slot) => {
-    if (!canAssign) return;
+    if (!canAssign || editingPositions) return;
 
     if (activePick?.playerId) {
       if (activePick.sourceSlotId === slot.slot) {
@@ -134,7 +162,7 @@ export default function FormationEditor({
 
   const onSlotDrop = (slotId, e) => {
     e.preventDefault();
-    if (!canAssign) return;
+    if (!canAssign || editingPositions) return;
     const payload = resolveDropPayload(e);
     if (!payload) return;
     assignPlayer(slotId, payload);
@@ -144,13 +172,55 @@ export default function FormationEditor({
 
   const onBenchDrop = (e) => {
     e.preventDefault();
-    if (!canAssign) return;
+    if (!canAssign || editingPositions) return;
     const payload = resolveDropPayload(e);
     if (!payload?.playerId) return;
     removePlayerFromPitch(payload.playerId);
     if (activePick?.playerId === payload.playerId) setActivePick(null);
     clearInteractionState();
   };
+
+  const startSlotPositionEdit = (slot, e) => {
+    if (!canAssign || !editingPositions) return;
+    e.preventDefault();
+    const coords = toPitchCoords(e.clientX, e.clientY);
+    if (!coords) return;
+    setActivePick(null);
+    setLayoutDrag({ slotId: slot.slot });
+    setLayoutPreview((prev) => ({ ...prev, [slot.slot]: coords }));
+  };
+
+  useEffect(() => {
+    if (!layoutDrag || !canAssign || !editingPositions) return undefined;
+
+    const onMove = (e) => {
+      const coords = toPitchCoords(e.clientX, e.clientY);
+      if (!coords) return;
+      setLayoutPreview((prev) => ({ ...prev, [layoutDrag.slotId]: coords }));
+    };
+
+    const finish = () => {
+      const coords = layoutPreviewRef.current[layoutDrag.slotId];
+      if (coords) {
+        onChange(setFormationSlotCoords(formation, layoutDrag.slotId, coords));
+      }
+      setLayoutDrag(null);
+      setLayoutPreview((prev) => {
+        const next = { ...prev };
+        delete next[layoutDrag.slotId];
+        return next;
+      });
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+    };
+  }, [layoutDrag, canAssign, editingPositions, formation, onChange]);
 
   const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
@@ -161,7 +231,36 @@ export default function FormationEditor({
           <p className="text-sm font-semibold">{title}</p>
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {canAssign && (
+            <div className="inline-flex rounded-md border border-border/70 bg-secondary/35 p-0.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={editingPositions ? 'ghost' : 'secondary'}
+                className="h-8 px-2.5 text-xs"
+                onClick={() => {
+                  setMode('assign');
+                  clearLayoutState();
+                }}
+              >
+                Assign players
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={editingPositions ? 'secondary' : 'ghost'}
+                className="h-8 px-2.5 text-xs"
+                onClick={() => {
+                  setMode('edit');
+                  setActivePick(null);
+                  setDraggingPick(null);
+                }}
+              >
+                Edit positions
+              </Button>
+            </div>
+          )}
           <Badge variant="outline">{formation.preset}</Badge>
           <Select value={formation.preset} onValueChange={onPresetChange} disabled={!canAssign}>
             <SelectTrigger className="w-28">
@@ -191,7 +290,7 @@ export default function FormationEditor({
         </div>
       </div>
 
-      {canAssign && activePick?.playerId && (
+      {canAssign && !editingPositions && activePick?.playerId && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs">
           <span className="font-medium text-primary">
             Selected:{' '}
@@ -228,7 +327,15 @@ export default function FormationEditor({
         </div>
       )}
 
+      {canAssign && editingPositions && (
+        <p className="rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-muted-foreground">
+          Drag any tactical card to a new place on the pitch. Position names update automatically
+          from the card location.
+        </p>
+      )}
+
       <div
+        ref={pitchRef}
         className={cn(
           'relative w-full overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-[hsl(var(--success)/0.2)] via-[hsl(var(--success)/0.1)] to-[hsl(var(--success)/0.22)] p-3',
           pitchSize
@@ -244,9 +351,15 @@ export default function FormationEditor({
           {slots.map((slot) => {
             const player = slot.playerId ? playersById[String(slot.playerId)] : null;
             const sourceActive = activePick?.sourceSlotId === slot.slot;
-            const hoverTarget = hoveredSlotId === slot.slot && Boolean(draggingPick?.playerId);
+            const hoverTarget =
+              !editingPositions && hoveredSlotId === slot.slot && Boolean(draggingPick?.playerId);
             const dragSource = draggingPick?.sourceSlotId === slot.slot;
-            const canPlaceHere = Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
+            const canPlaceHere =
+              !editingPositions && Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
+            const isLayoutDragging = layoutDrag?.slotId === slot.slot;
+            const previewCoords = layoutPreview[slot.slot];
+            const left = previewCoords?.x ?? slot.x;
+            const top = previewCoords?.y ?? slot.y;
 
             return (
               <motion.button
@@ -257,18 +370,21 @@ export default function FormationEditor({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.18 }}
                 type="button"
-                draggable={Boolean(player) && canAssign}
-                onDragStart={(e) => player && startDrag(e, player._id, slot.slot)}
+                draggable={Boolean(player) && canAssign && !editingPositions}
+                onDragStart={(e) => !editingPositions && player && startDrag(e, player._id, slot.slot)}
                 onDragEnd={clearInteractionState}
                 onDragOver={(e) => {
+                  if (editingPositions) return;
                   e.preventDefault();
                   setHoveredSlotId(slot.slot);
                 }}
                 onDragLeave={() => {
+                  if (editingPositions) return;
                   if (hoveredSlotId === slot.slot) setHoveredSlotId(null);
                 }}
                 onDrop={(e) => onSlotDrop(slot.slot, e)}
                 onClick={() => onSlotClick(slot)}
+                onPointerDown={(e) => startSlotPositionEdit(slot, e)}
                 disabled={!canAssign}
                 className={cn(
                   'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px] transition-all',
@@ -278,10 +394,12 @@ export default function FormationEditor({
                   sourceActive && 'ring-2 ring-primary',
                   hoverTarget && 'ring-2 ring-primary/70',
                   dragSource && 'opacity-70',
+                  isLayoutDragging && 'ring-2 ring-accent',
                   !player && 'opacity-90',
-                  canPlaceHere && !player && 'border-dashed'
+                  canPlaceHere && !player && 'border-dashed',
+                  editingPositions && canAssign && 'cursor-grab active:cursor-grabbing touch-none select-none'
                 )}
-                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+                style={{ left: `${left}%`, top: `${top}%` }}
               >
                 {player && canAssign && (
                   <span className="pointer-events-none absolute right-1 top-1 inline-flex rounded bg-background/40 p-0.5 text-muted-foreground/80">
@@ -289,7 +407,7 @@ export default function FormationEditor({
                   </span>
                 )}
                 <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
-                  {slot.label}
+                  {slot.position || slot.label}
                 </p>
                 {player ? (
                   <>
@@ -302,7 +420,9 @@ export default function FormationEditor({
                           #{player.jerseyNumber}
                         </span>
                       )}
-                      <span className="truncate">{player.role || 'Player'}</span>
+                      <span className="truncate">
+                        {normalizeFootballPosition(player.role) || player.role || 'Player'}
+                      </span>
                     </div>
                   </>
                 ) : canPlaceHere ? (
@@ -318,10 +438,14 @@ export default function FormationEditor({
 
       <div
         onDragOver={(e) => {
+          if (editingPositions) return;
           e.preventDefault();
           setBenchDropActive(true);
         }}
-        onDragLeave={() => setBenchDropActive(false)}
+        onDragLeave={() => {
+          if (editingPositions) return;
+          setBenchDropActive(false);
+        }}
         onDrop={onBenchDrop}
         className={cn(
           'rounded-xl border border-border/75 bg-card/70 p-3 transition-colors',
@@ -334,7 +458,9 @@ export default function FormationEditor({
           </p>
           <p className="text-[11px] text-muted-foreground">
             {canAssign
-              ? 'Desktop: drag to swap. Touch: tap a player, then tap target slot.'
+              ? editingPositions
+                ? 'Position mode: drag any card to a tactical area.'
+                : 'Assign mode: drag to swap or tap player then tap slot.'
               : 'Read-only'}
           </p>
         </div>
@@ -352,12 +478,12 @@ export default function FormationEditor({
                   key={player._id}
                   layout
                   type="button"
-                  disabled={!canAssign}
-                  draggable={canAssign}
-                  onDragStart={(e) => canAssign && startDrag(e, player._id, null)}
+                  disabled={!canAssign || editingPositions}
+                  draggable={canAssign && !editingPositions}
+                  onDragStart={(e) => canAssign && !editingPositions && startDrag(e, player._id, null)}
                   onDragEnd={clearInteractionState}
                   onClick={() => {
-                    if (!canAssign) return;
+                    if (!canAssign || editingPositions) return;
                     setActivePick((prev) =>
                       String(prev?.playerId) === String(player._id) && !prev?.sourceSlotId
                         ? null
