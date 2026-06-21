@@ -24,6 +24,7 @@ const SLOT_LINE_STYLES = {
   mid: 'border-accent/45 bg-accent/12',
   fwd: 'border-[hsl(var(--success)/0.45)] bg-[hsl(var(--success)/0.12)]',
 };
+const BENCH_VISIBLE_CAPACITY = 15;
 
 function shortName(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -511,8 +512,8 @@ export default function FormationEditor({
           <p className="text-[11px] text-muted-foreground">
             {canAssign
               ? editingPositions
-                ? 'Position mode: drag any card to a tactical area.'
-                : 'Assign mode: drag to swap or tap player then tap slot.'
+                ? `Position mode: drag any card to a tactical area. Bench space shows ${BENCH_VISIBLE_CAPACITY}+ players.`
+                : `Assign mode: drag to swap or tap player then tap slot. Bench space shows ${BENCH_VISIBLE_CAPACITY}+ players.`
               : 'Read-only'}
           </p>
         </div>
@@ -521,7 +522,7 @@ export default function FormationEditor({
             <Sparkles className="h-3.5 w-3.5" /> Full XI assigned.
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid max-h-[13.75rem] min-h-[13.75rem] grid-cols-3 gap-2 overflow-y-auto pr-1">
             {bench.map((player) => {
               const active =
                 String(activePick?.playerId) === String(player._id) && !activePick?.sourceSlotId;
@@ -543,15 +544,18 @@ export default function FormationEditor({
                     );
                   }}
                   className={cn(
-                    'flex min-h-9 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                    'flex min-h-9 min-w-0 w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium transition-colors',
                     active
                       ? 'border-primary/55 bg-primary/15 text-primary'
                       : 'border-border/70 bg-secondary/60 hover:bg-secondary'
                   )}
+                  title={player.name}
                 >
                   <GripVertical className="h-3 w-3 opacity-60" />
-                  {player.jerseyNumber != null ? `#${player.jerseyNumber} ` : ''}
-                  {shortName(player.name)}
+                  <span className="truncate">
+                    {player.jerseyNumber != null ? `#${player.jerseyNumber} ` : ''}
+                    {shortName(player.name)}
+                  </span>
                 </motion.button>
               );
             })}
