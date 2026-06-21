@@ -1,6 +1,7 @@
 import {
   FOOTBALL_FORMATION_PRESETS,
   FOOTBALL_FORMATION_PRESET_VALUES,
+  inferFootballFormationPositions,
   footballPositionLine,
   inferFootballPitchPosition,
   normalizeFootballPosition,
@@ -21,14 +22,26 @@ function normalizePlayerId(playerId) {
 function normalizeSlot(meta, rawSlot = {}) {
   const x = clampCoord(rawSlot.x, meta.x);
   const y = clampCoord(rawSlot.y, meta.y);
-  const position = normalizeFootballPosition(rawSlot.position) || inferFootballPitchPosition(x, y);
   return {
     slot: meta.slot,
     playerId: rawSlot.playerId ?? null,
     x,
     y,
-    position,
+    position: normalizeFootballPosition(rawSlot.position) || null,
   };
+}
+
+function applyInferredPositions(slots) {
+  const inferred = inferFootballFormationPositions(slots);
+  const bySlot = new Map(inferred.map((slot) => [slot.slot, slot.position]));
+  return slots.map((slot) => {
+    const inferredPosition = bySlot.get(slot.slot);
+    const fallback = normalizeFootballPosition(slot.position) || inferFootballPitchPosition(slot.x, slot.y);
+    return {
+      ...slot,
+      position: inferredPosition ?? fallback,
+    };
+  });
 }
 
 export function formationTemplate(preset) {
@@ -36,9 +49,10 @@ export function formationTemplate(preset) {
 }
 
 export function emptyFormation(preset = DEFAULT_FOOTBALL_FORMATION_PRESET) {
+  const slots = formationTemplate(preset).map((meta) => normalizeSlot(meta));
   return {
     preset,
-    slots: formationTemplate(preset).map((meta) => normalizeSlot(meta)),
+    slots: applyInferredPositions(slots),
   };
 }
 
@@ -48,9 +62,10 @@ export function normalizeFormation(value, fallbackPreset = DEFAULT_FOOTBALL_FORM
   }
   const template = formationTemplate(value.preset);
   const existing = new Map((value.slots ?? []).map((slot) => [slot.slot, slot]));
+  const slots = template.map((meta) => normalizeSlot(meta, existing.get(meta.slot)));
   return {
     preset: value.preset,
-    slots: template.map((meta) => normalizeSlot(meta, existing.get(meta.slot))),
+    slots: applyInferredPositions(slots),
   };
 }
 
@@ -58,9 +73,10 @@ export function remapFormationPreset(value, nextPreset) {
   const current = normalizeFormation(value);
   const template = formationTemplate(nextPreset);
   const currentBySlot = new Map(current.slots.map((slot) => [slot.slot, slot.playerId ?? null]));
+  const slots = template.map((meta) => normalizeSlot(meta, { playerId: currentBySlot.get(meta.slot) ?? null }));
   return {
     preset: nextPreset,
-    slots: template.map((meta) => normalizeSlot(meta, { playerId: currentBySlot.get(meta.slot) ?? null })),
+    slots: applyInferredPositions(slots),
   };
 }
 
@@ -113,14 +129,16 @@ export function setFormationSlotPlayer(formation, slotId, playerId, options = {}
     Boolean(targetPlayerId) &&
     targetPlayerId !== pid;
 
+  const slots = current.slots.map((slot) => {
+    if (slot.slot === slotId) return { ...slot, playerId: pid };
+    if (canSwap && slot.slot === sourceSlotId) return { ...slot, playerId: targetPlayerId };
+    if (pid && String(slot.playerId) === pid) return { ...slot, playerId: null };
+    return { ...slot, playerId: slot.playerId ?? null };
+  });
+
   return {
     preset: current.preset,
-    slots: current.slots.map((slot) => {
-      if (slot.slot === slotId) return { ...slot, playerId: pid };
-      if (canSwap && slot.slot === sourceSlotId) return { ...slot, playerId: targetPlayerId };
-      if (pid && String(slot.playerId) === pid) return { ...slot, playerId: null };
-      return { ...slot, playerId: slot.playerId ?? null };
-    }),
+    slots: applyInferredPositions(slots),
   };
 }
 
@@ -130,19 +148,18 @@ export function setFormationSlotCoords(formation, slotId, coords) {
   if (!currentSlot) return current;
   const x = clampCoord(coords?.x, currentSlot.x ?? 50);
   const y = clampCoord(coords?.y, currentSlot.y ?? 50);
-  const position = inferFootballPitchPosition(x, y);
+  const slots = current.slots.map((slot) =>
+    slot.slot === slotId
+      ? {
+          ...slot,
+          x,
+          y,
+        }
+      : slot
+  );
   return {
     preset: current.preset,
-    slots: current.slots.map((slot) =>
-      slot.slot === slotId
-        ? {
-            ...slot,
-            x,
-            y,
-            position,
-          }
-        : slot
-    ),
+    slots: applyInferredPositions(slots),
   };
 }
 
@@ -162,7 +179,7 @@ export function slotsWithMeta(formation) {
   const normalized = normalizeFormation(formation);
   const bySlot = new Map(normalized.slots.map((slot) => [slot.slot, slot]));
   return formationTemplate(normalized.preset).map((meta) => {
-    const raw = bySlot.get(meta.slot) ?? {};
+    const raw = bySlot.get(meta.slot) ?? normalizeSlot(meta);
     const x = clampCoord(raw.x, meta.x);
     const y = clampCoord(raw.y, meta.y);
     const position = normalizeFootballPosition(raw.position) || inferFootballPitchPosition(x, y);

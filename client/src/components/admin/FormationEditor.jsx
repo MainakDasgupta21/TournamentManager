@@ -52,13 +52,11 @@ export default function FormationEditor({
   const [draggingPick, setDraggingPick] = useState(null); // { playerId, sourceSlotId|null }
   const [hoveredSlotId, setHoveredSlotId] = useState(null);
   const [benchDropActive, setBenchDropActive] = useState(false);
-  const [layoutDrag, setLayoutDrag] = useState(null); // { slotId }
-  const [layoutPreview, setLayoutPreview] = useState({});
-  const layoutPreviewRef = useRef(layoutPreview);
-
-  useEffect(() => {
-    layoutPreviewRef.current = layoutPreview;
-  }, [layoutPreview]);
+  const [layoutDrag, setLayoutDrag] = useState(null); // { slotId, pointerId }
+  const layoutDragRef = useRef(null);
+  const pitchRectRef = useRef(null);
+  const dragRafRef = useRef(null);
+  const slotNodeRefs = useRef(new Map());
 
   const bench = useMemo(
     () =>
@@ -92,8 +90,8 @@ export default function FormationEditor({
     onChange(clearFormationPlayer(formation, playerId));
   };
 
-  const toPitchCoords = (clientX, clientY) => {
-    const rect = pitchRef.current?.getBoundingClientRect();
+  const toPitchCoords = (clientX, clientY, rectOverride = null) => {
+    const rect = rectOverride ?? pitchRectRef.current ?? pitchRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
@@ -103,9 +101,21 @@ export default function FormationEditor({
     };
   };
 
-  const clearLayoutState = () => {
+  const clearLayoutState = ({ preserveNode = false } = {}) => {
+    if (dragRafRef.current != null) {
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
+    if (!preserveNode && layoutDragRef.current?.slotId) {
+      const node = slotNodeRefs.current.get(layoutDragRef.current.slotId);
+      if (node) {
+        node.style.left = '';
+        node.style.top = '';
+      }
+    }
+    layoutDragRef.current = null;
+    pitchRectRef.current = null;
     setLayoutDrag(null);
-    setLayoutPreview({});
   };
 
   const clearInteractionState = () => {
@@ -183,33 +193,67 @@ export default function FormationEditor({
   const startSlotPositionEdit = (slot, e) => {
     if (!canAssign || !editingPositions) return;
     e.preventDefault();
-    const coords = toPitchCoords(e.clientX, e.clientY);
+    const rect = pitchRef.current?.getBoundingClientRect();
+    const coords = toPitchCoords(e.clientX, e.clientY, rect);
     if (!coords) return;
     setActivePick(null);
-    setLayoutDrag({ slotId: slot.slot });
-    setLayoutPreview((prev) => ({ ...prev, [slot.slot]: coords }));
+    pitchRectRef.current = rect;
+    layoutDragRef.current = { slotId: slot.slot, pointerId: e.pointerId, coords };
+    setLayoutDrag({ slotId: slot.slot, pointerId: e.pointerId });
+    if (e.currentTarget?.setPointerCapture) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore pointer capture errors on unsupported environments.
+      }
+    }
   };
 
   useEffect(() => {
     if (!layoutDrag || !canAssign || !editingPositions) return undefined;
 
-    const onMove = (e) => {
-      const coords = toPitchCoords(e.clientX, e.clientY);
-      if (!coords) return;
-      setLayoutPreview((prev) => ({ ...prev, [layoutDrag.slotId]: coords }));
+    const flushDragPreview = () => {
+      dragRafRef.current = null;
+      const drag = layoutDragRef.current;
+      if (!drag?.slotId) return;
+      const node = slotNodeRefs.current.get(drag.slotId);
+      if (!node) return;
+      node.style.left = `${drag.coords.x}%`;
+      node.style.top = `${drag.coords.y}%`;
     };
 
-    const finish = () => {
-      const coords = layoutPreviewRef.current[layoutDrag.slotId];
-      if (coords) {
-        onChange(setFormationSlotCoords(formation, layoutDrag.slotId, coords));
+    const onMove = (e) => {
+      const drag = layoutDragRef.current;
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      const coords = toPitchCoords(e.clientX, e.clientY, pitchRectRef.current);
+      if (!coords) return;
+      drag.coords = coords;
+      if (dragRafRef.current == null) {
+        dragRafRef.current = requestAnimationFrame(flushDragPreview);
       }
-      setLayoutDrag(null);
-      setLayoutPreview((prev) => {
-        const next = { ...prev };
-        delete next[layoutDrag.slotId];
-        return next;
-      });
+    };
+
+    const finish = (e) => {
+      const drag = layoutDragRef.current;
+      if (!drag) return;
+      if (e?.pointerId != null && e.pointerId !== drag.pointerId) return;
+      if (dragRafRef.current != null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      const coords = drag.coords;
+      if (coords) {
+        onChange(setFormationSlotCoords(formation, drag.slotId, coords));
+      }
+      const node = slotNodeRefs.current.get(drag.slotId);
+      if (node?.releasePointerCapture) {
+        try {
+          node.releasePointerCapture(drag.pointerId);
+        } catch {
+          // Ignore release errors when capture is already gone.
+        }
+      }
+      clearLayoutState({ preserveNode: true });
     };
 
     window.addEventListener('pointermove', onMove);
@@ -219,8 +263,17 @@ export default function FormationEditor({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
+      if (dragRafRef.current != null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
     };
   }, [layoutDrag, canAssign, editingPositions, formation, onChange]);
+
+  const setSlotNodeRef = (slotId) => (node) => {
+    if (node) slotNodeRefs.current.set(slotId, node);
+    else slotNodeRefs.current.delete(slotId);
+  };
 
   const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
@@ -357,18 +410,16 @@ export default function FormationEditor({
             const canPlaceHere =
               !editingPositions && Boolean(activePick?.playerId) && activePick.sourceSlotId !== slot.slot;
             const isLayoutDragging = layoutDrag?.slotId === slot.slot;
-            const previewCoords = layoutPreview[slot.slot];
-            const left = previewCoords?.x ?? slot.x;
-            const top = previewCoords?.y ?? slot.y;
 
             return (
               <motion.button
+                ref={setSlotNodeRef(slot.slot)}
                 key={`${formation.preset}-${slot.slot}`}
-                layout
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.18 }}
+                layout={!editingPositions}
+                initial={editingPositions ? false : { opacity: 0, scale: 0.92 }}
+                animate={editingPositions ? undefined : { opacity: 1, scale: 1 }}
+                exit={editingPositions ? undefined : { opacity: 0, scale: 0.9 }}
+                transition={editingPositions ? { duration: 0 } : { duration: 0.18 }}
                 type="button"
                 draggable={Boolean(player) && canAssign && !editingPositions}
                 onDragStart={(e) => !editingPositions && player && startDrag(e, player._id, slot.slot)}
@@ -387,7 +438,7 @@ export default function FormationEditor({
                 onPointerDown={(e) => startSlotPositionEdit(slot, e)}
                 disabled={!canAssign}
                 className={cn(
-                  'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px] transition-all',
+                  'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px]',
                   'relative',
                   SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
                   canAssign && 'surface-interactive',
@@ -397,9 +448,12 @@ export default function FormationEditor({
                   isLayoutDragging && 'ring-2 ring-accent',
                   !player && 'opacity-90',
                   canPlaceHere && !player && 'border-dashed',
+                  editingPositions
+                    ? 'transition-none'
+                    : 'transition-[box-shadow,opacity,transform,background-color,border-color]',
                   editingPositions && canAssign && 'cursor-grab active:cursor-grabbing touch-none select-none'
                 )}
-                style={{ left: `${left}%`, top: `${top}%` }}
+                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
               >
                 {player && canAssign && (
                   <span className="pointer-events-none absolute right-1 top-1 inline-flex rounded bg-background/40 p-0.5 text-muted-foreground/80">

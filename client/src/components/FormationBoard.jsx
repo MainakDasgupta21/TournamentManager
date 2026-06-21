@@ -88,7 +88,7 @@ export default function FormationBoard({
               style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             >
               <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
-                {slot.label}
+                {slot.position || slot.label}
               </p>
               {player ? (
                 <>

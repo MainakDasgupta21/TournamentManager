@@ -15,7 +15,7 @@ import {
   FOOTBALL_POSITION_VALUES,
   FOOTBALL_FORMATION_PRESETS,
   FIXTURE_STATUS,
-  inferFootballPitchPosition,
+  inferFootballFormationPositions,
   normalizeFootballPosition,
 } from '@tms/shared/constants';
 
@@ -40,23 +40,32 @@ const clampCoord = (value, fallback) => {
 function normalizeFormationSlot(meta, rawSlot = {}) {
   const x = clampCoord(rawSlot.x, meta.x);
   const y = clampCoord(rawSlot.y, meta.y);
-  const position = normalizeFootballPosition(rawSlot.position) || inferFootballPitchPosition(x, y);
   return {
     slot: meta.slot,
     playerId: rawSlot.playerId ?? null,
     x,
     y,
-    position,
+    position: normalizeFootballPosition(rawSlot.position) || null,
   };
+}
+
+function applyInferredFormationPositions(slots) {
+  const inferred = inferFootballFormationPositions(slots);
+  const bySlot = new Map(inferred.map((slot) => [slot.slot, slot.position]));
+  return slots.map((slot) => ({
+    ...slot,
+    position: bySlot.get(slot.slot) ?? slot.position ?? 'CMF',
+  }));
 }
 
 function normalizeFootballFormationPayload(formation) {
   ensurePresetConfigured(formation?.preset);
   const template = FOOTBALL_FORMATION_PRESETS[formation.preset] ?? [];
   const bySlot = new Map((formation?.slots ?? []).map((slot) => [slot.slot, slot]));
+  const slots = template.map((meta) => normalizeFormationSlot(meta, bySlot.get(meta.slot)));
   return {
     preset: formation.preset,
-    slots: template.map((meta) => normalizeFormationSlot(meta, bySlot.get(meta.slot))),
+    slots: applyInferredFormationPositions(slots),
   };
 }
 

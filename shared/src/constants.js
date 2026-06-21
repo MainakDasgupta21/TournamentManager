@@ -191,16 +191,16 @@ export function inferFootballPitchPosition(x, y) {
   const px = clampPitchPercent(x, 50);
   const py = clampPitchPercent(y, 50);
 
-  if (py >= 82) return 'GK';
+  if (py >= 80) return 'GK';
 
-  if (py >= 66) {
+  if (py >= 63) {
     if (px < 28) return 'LB';
     if (px < 50) return 'LCB';
     if (px < 72) return 'RCB';
     return 'RB';
   }
 
-  if (py >= 38) {
+  if (py >= 33) {
     const centralBand = px >= 35 && px <= 65;
     if (py >= 56 && centralBand) return 'DMF';
     if (py <= 46 && centralBand) return 'CAM';
@@ -213,6 +213,126 @@ export function inferFootballPitchPosition(x, y) {
   if (px > 68) return 'RWF';
   if (py < 20) return 'CF';
   return 'SS';
+}
+
+function assignMidfieldRole(slot) {
+  if (slot.y >= 56) return 'DMF';
+  if (slot.y <= 42) return 'CAM';
+  return 'CMF';
+}
+
+/**
+ * Infer a coherent tactical label set for the whole formation.
+ * This avoids per-slot threshold artifacts (e.g. duplicated random SS/CMF).
+ */
+export function inferFootballFormationPositions(slots = []) {
+  const normalized = (slots ?? []).map((slot, idx) => ({
+    slot: slot?.slot ?? `slot-${idx}`,
+    x: clampPitchPercent(slot?.x, 50),
+    y: clampPitchPercent(slot?.y, 50),
+  }));
+  if (!normalized.length) return [];
+
+  const gkCandidate = normalized.reduce((best, cur) => (cur.y > best.y ? cur : best), normalized[0]);
+  const roles = new Map([[gkCandidate.slot, 'GK']]);
+  const outfield = normalized.filter((slot) => slot.slot !== gkCandidate.slot);
+
+  const def = [];
+  const mid = [];
+  const fwd = [];
+  for (const slot of outfield) {
+    if (slot.y >= 63) def.push(slot);
+    else if (slot.y >= 33) mid.push(slot);
+    else fwd.push(slot);
+  }
+
+  const byX = (arr) => [...arr].sort((a, b) => a.x - b.x || b.y - a.y);
+
+  if (def.length === 1) {
+    roles.set(def[0].slot, 'LCB');
+  } else if (def.length === 2) {
+    const [left, right] = byX(def);
+    roles.set(left.slot, 'LCB');
+    roles.set(right.slot, 'RCB');
+  } else if (def.length === 3) {
+    const [left, center, right] = byX(def);
+    roles.set(left.slot, 'LB');
+    roles.set(center.slot, 'LCB');
+    roles.set(right.slot, 'RB');
+  } else if (def.length >= 4) {
+    const sorted = byX(def);
+    const left = sorted[0];
+    const right = sorted[sorted.length - 1];
+    roles.set(left.slot, 'LB');
+    roles.set(right.slot, 'RB');
+    const middle = sorted.slice(1, -1);
+    const split = Math.ceil(middle.length / 2);
+    for (const slot of middle.slice(0, split)) roles.set(slot.slot, 'LCB');
+    for (const slot of middle.slice(split)) roles.set(slot.slot, 'RCB');
+  }
+
+  if (mid.length === 1) {
+    roles.set(mid[0].slot, assignMidfieldRole(mid[0]));
+  } else if (mid.length === 2) {
+    const sorted = byX(mid);
+    const spread = Math.abs(sorted[1].x - sorted[0].x);
+    if (spread >= 28) {
+      roles.set(sorted[0].slot, 'LMF');
+      roles.set(sorted[1].slot, 'RMF');
+    } else {
+      const deep = sorted[0].y >= sorted[1].y ? sorted[0] : sorted[1];
+      const high = deep.slot === sorted[0].slot ? sorted[1] : sorted[0];
+      roles.set(deep.slot, 'DMF');
+      roles.set(high.slot, 'CAM');
+    }
+  } else if (mid.length >= 3) {
+    const sorted = byX(mid);
+    roles.set(sorted[0].slot, 'LMF');
+    roles.set(sorted[sorted.length - 1].slot, 'RMF');
+    const center = sorted.slice(1, -1);
+    if (center.length === 1) {
+      roles.set(center[0].slot, assignMidfieldRole(center[0]));
+    } else if (center.length > 1) {
+      const deepest = center.reduce((best, cur) => (cur.y > best.y ? cur : best), center[0]);
+      const highest = center.reduce((best, cur) => (cur.y < best.y ? cur : best), center[0]);
+      if (deepest.slot === highest.slot) {
+        roles.set(deepest.slot, assignMidfieldRole(deepest));
+      } else {
+        roles.set(deepest.slot, 'DMF');
+        roles.set(highest.slot, 'CAM');
+      }
+      for (const slot of center) {
+        if (!roles.has(slot.slot)) roles.set(slot.slot, 'CMF');
+      }
+    }
+  }
+
+  if (fwd.length === 1) {
+    roles.set(fwd[0].slot, 'CF');
+  } else if (fwd.length === 2) {
+    const sorted = [...fwd].sort((a, b) => a.y - b.y || a.x - b.x);
+    roles.set(sorted[0].slot, 'CF');
+    roles.set(sorted[1].slot, 'SS');
+  } else if (fwd.length >= 3) {
+    const sorted = byX(fwd);
+    roles.set(sorted[0].slot, 'LWF');
+    roles.set(sorted[sorted.length - 1].slot, 'RWF');
+    const center = sorted.slice(1, -1);
+    if (center.length === 1) {
+      roles.set(center[0].slot, 'CF');
+    } else if (center.length > 1) {
+      const cf = center.reduce((best, cur) => (cur.y < best.y ? cur : best), center[0]);
+      roles.set(cf.slot, 'CF');
+      for (const slot of center) {
+        if (!roles.has(slot.slot)) roles.set(slot.slot, 'SS');
+      }
+    }
+  }
+
+  return normalized.map((slot) => ({
+    slot: slot.slot,
+    position: roles.get(slot.slot) ?? inferFootballPitchPosition(slot.x, slot.y),
+  }));
 }
 
 /**
