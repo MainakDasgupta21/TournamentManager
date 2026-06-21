@@ -4,7 +4,10 @@ import { Plus, Trash2, Users, Shirt, X, Pencil, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   CRICKET_ROLES,
+  FOOTBALL_BENCH_PLAYER_COUNT,
+  FOOTBALL_PITCH_PLAYER_COUNT,
   FOOTBALL_POSITIONS,
+  FOOTBALL_SQUAD_PLAYER_COUNT,
   PLAYER_CATEGORIES,
   SPORTS,
   footballPositionLabel,
@@ -250,6 +253,11 @@ function RosterDialog({ tournamentId, team, sport }) {
     () => assignedFormationPlayerIds(formationDraft).length,
     [formationDraft]
   );
+  const squadCount = players.length;
+  const computedBenchCount = Math.max(0, squadCount - assignedFormationCount);
+  const hasStrictSquad = !isFootball || squadCount === FOOTBALL_SQUAD_PLAYER_COUNT;
+  const hasStrictXI = !isFootball || assignedFormationCount === FOOTBALL_PITCH_PLAYER_COUNT;
+  const hasStrictBench = !isFootball || computedBenchCount === FOOTBALL_BENCH_PLAYER_COUNT;
 
   useEffect(() => {
     if (!isFootball || !teamId) return;
@@ -277,6 +285,10 @@ function RosterDialog({ tournamentId, team, sport }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (isFootball && players.length >= FOOTBALL_SQUAD_PLAYER_COUNT) {
+      toast.error(`Football squads are capped at ${FOOTBALL_SQUAD_PLAYER_COUNT} players`);
+      return;
+    }
     try {
       await addPlayer.mutateAsync({
         teamId: team._id,
@@ -302,6 +314,12 @@ function RosterDialog({ tournamentId, team, sport }) {
   };
 
   const saveFormation = async () => {
+    if (isFootball && (!hasStrictSquad || !hasStrictXI || !hasStrictBench)) {
+      toast.error(
+        `Football teams require exactly ${FOOTBALL_SQUAD_PLAYER_COUNT} players: ${FOOTBALL_PITCH_PLAYER_COUNT} on pitch and ${FOOTBALL_BENCH_PLAYER_COUNT} on bench`
+      );
+      return;
+    }
     try {
       await updateFormation.mutateAsync({
         teamId: team._id,
@@ -353,7 +371,14 @@ function RosterDialog({ tournamentId, team, sport }) {
                   <Label className="text-xs">#</Label>
                   <Input type="number" value={form.jerseyNumber} onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })} />
                 </div>
-                <Button type="submit" size="icon" disabled={addPlayer.isPending} className="w-full sm:w-10"><Plus /></Button>
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={addPlayer.isPending || (isFootball && players.length >= FOOTBALL_SQUAD_PLAYER_COUNT)}
+                  className="w-full sm:w-10"
+                >
+                  <Plus />
+                </Button>
               </div>
             </form>
             <ul className="max-h-72 divide-y divide-border/50 overflow-y-auto scrollbar-thin">
@@ -374,8 +399,14 @@ function RosterDialog({ tournamentId, team, sport }) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">Football only</Badge>
-                <Badge variant={assignedFormationCount === 11 ? 'success' : 'secondary'}>
-                  XI assigned: {assignedFormationCount}/11
+                <Badge variant={hasStrictSquad ? 'success' : 'secondary'}>
+                  Squad: {squadCount}/{FOOTBALL_SQUAD_PLAYER_COUNT}
+                </Badge>
+                <Badge variant={hasStrictXI ? 'success' : 'secondary'}>
+                  XI assigned: {assignedFormationCount}/{FOOTBALL_PITCH_PLAYER_COUNT}
+                </Badge>
+                <Badge variant={hasStrictBench ? 'success' : 'secondary'}>
+                  Bench: {computedBenchCount}/{FOOTBALL_BENCH_PLAYER_COUNT}
                 </Badge>
                 {formationDirty && <Badge variant="accent">Unsaved changes</Badge>}
                 <p className="text-xs text-muted-foreground">
@@ -396,7 +427,7 @@ function RosterDialog({ tournamentId, team, sport }) {
                   type="button"
                   size="sm"
                   onClick={saveFormation}
-                  disabled={!formationDirty || updateFormation.isPending}
+                  disabled={!formationDirty || updateFormation.isPending || !hasStrictSquad || !hasStrictXI || !hasStrictBench}
                 >
                   {updateFormation.isPending ? 'Saving...' : 'Save formation'}
                 </Button>
@@ -408,6 +439,12 @@ function RosterDialog({ tournamentId, team, sport }) {
               swap players, and <span className="font-medium text-foreground">Edit positions</span> to
               drag tactical cards anywhere on the pitch (auto-labeled by location).
             </p>
+            {(!hasStrictSquad || !hasStrictXI || !hasStrictBench) && (
+              <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                Save is locked until this team has exactly {FOOTBALL_SQUAD_PLAYER_COUNT} players with{' '}
+                {FOOTBALL_PITCH_PLAYER_COUNT} assigned on the pitch and {FOOTBALL_BENCH_PLAYER_COUNT} on the bench.
+              </p>
+            )}
 
             <FormationEditor
               roster={players}

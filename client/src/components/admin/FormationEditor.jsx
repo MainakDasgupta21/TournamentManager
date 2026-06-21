@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { GripVertical, RotateCcw, Sparkles } from 'lucide-react';
-import { FOOTBALL_FORMATION_PRESET_VALUES, normalizeFootballPosition } from '@tms/shared/constants';
+import {
+  FOOTBALL_BENCH_PLAYER_COUNT,
+  FOOTBALL_FORMATION_PRESET_VALUES,
+  normalizeFootballPosition,
+} from '@tms/shared/constants';
 import {
   emptyFormation,
   normalizeFormation,
@@ -24,7 +28,7 @@ const SLOT_LINE_STYLES = {
   mid: 'border-accent/45 bg-accent/12',
   fwd: 'border-[hsl(var(--success)/0.45)] bg-[hsl(var(--success)/0.12)]',
 };
-const BENCH_VISIBLE_CAPACITY = 15;
+const BENCH_VISIBLE_CAPACITY = FOOTBALL_BENCH_PLAYER_COUNT;
 
 function shortName(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -277,6 +281,10 @@ export default function FormationEditor({
   };
 
   const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
+  const visibleBenchPlayers = bench.slice(0, BENCH_VISIBLE_CAPACITY);
+  const overflowBenchPlayers = bench.slice(BENCH_VISIBLE_CAPACITY);
+  const benchSlots = [...visibleBenchPlayers];
+  while (benchSlots.length < BENCH_VISIBLE_CAPACITY) benchSlots.push(null);
 
   return (
     <div className="space-y-3">
@@ -501,34 +509,77 @@ export default function FormationEditor({
       >
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Bench ({bench.length})
+            Bench ({bench.length}/{BENCH_VISIBLE_CAPACITY})
           </p>
           <p className="text-[11px] text-muted-foreground">
             {canAssign
               ? editingPositions
-                ? `Position mode: drag any card to a tactical area. Bench space shows ${BENCH_VISIBLE_CAPACITY}+ players.`
-                : `Assign mode: drag to swap or tap player then tap slot. Bench space shows ${BENCH_VISIBLE_CAPACITY}+ players.`
+                ? `Position mode: drag any card to a tactical area. Bench requires ${BENCH_VISIBLE_CAPACITY} players.`
+                : `Assign mode: drag to swap or tap player then tap slot. Bench requires ${BENCH_VISIBLE_CAPACITY} players.`
               : 'Read-only'}
           </p>
         </div>
-        {!bench.length ? (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5" /> Full XI assigned.
-          </div>
-        ) : (
-          <div className="grid max-h-[13.75rem] min-h-[13.75rem] grid-cols-3 gap-2 overflow-y-auto pr-1">
-            {bench.map((player) => {
-              const active =
-                String(activePick?.playerId) === String(player._id) && !activePick?.sourceSlotId;
+        <div className="grid min-h-[13.75rem] grid-cols-3 gap-2">
+          {benchSlots.map((player, index) => {
+            if (!player) {
               return (
-                <motion.button
-                  key={player._id}
-                  layout
+                <div
+                  key={`bench-empty-${index}`}
+                  className="flex min-h-9 min-w-0 items-center justify-center rounded-full border border-dashed border-border/70 bg-secondary/35 px-2 py-1 text-[11px] text-muted-foreground"
+                >
+                  Empty slot
+                </div>
+              );
+            }
+            const active =
+              String(activePick?.playerId) === String(player._id) && !activePick?.sourceSlotId;
+            return (
+              <motion.button
+                key={player._id}
+                layout
+                type="button"
+                disabled={!canAssign || editingPositions}
+                draggable={canAssign && !editingPositions}
+                onDragStart={(e) => canAssign && !editingPositions && startDrag(e, player._id, null)}
+                onDragEnd={clearInteractionState}
+                onClick={() => {
+                  if (!canAssign || editingPositions) return;
+                  setActivePick((prev) =>
+                    String(prev?.playerId) === String(player._id) && !prev?.sourceSlotId
+                      ? null
+                      : { playerId: String(player._id), sourceSlotId: null }
+                  );
+                }}
+                className={cn(
+                  'flex min-h-9 min-w-0 w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium transition-colors',
+                  active
+                    ? 'border-primary/55 bg-primary/15 text-primary'
+                    : 'border-border/70 bg-secondary/60 hover:bg-secondary'
+                )}
+                title={player.name}
+              >
+                <GripVertical className="h-3 w-3 opacity-60" />
+                <span className="truncate">
+                  {player.jerseyNumber != null ? `#${player.jerseyNumber} ` : ''}
+                  {shortName(player.name)}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+        {overflowBenchPlayers.length > 0 && (
+          <>
+            <p className="mt-2 text-xs text-destructive">
+              {overflowBenchPlayers.length} extra bench players exceed the strict {BENCH_VISIBLE_CAPACITY}
+              -player bench limit.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {overflowBenchPlayers.map((player) => (
+                <button
+                  key={`overflow-${player._id}`}
                   type="button"
                   disabled={!canAssign || editingPositions}
-                  draggable={canAssign && !editingPositions}
-                  onDragStart={(e) => canAssign && !editingPositions && startDrag(e, player._id, null)}
-                  onDragEnd={clearInteractionState}
+                  className="rounded-full border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-xs text-destructive disabled:opacity-60"
                   onClick={() => {
                     if (!canAssign || editingPositions) return;
                     setActivePick((prev) =>
@@ -537,22 +588,17 @@ export default function FormationEditor({
                         : { playerId: String(player._id), sourceSlotId: null }
                     );
                   }}
-                  className={cn(
-                    'flex min-h-9 min-w-0 w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium transition-colors',
-                    active
-                      ? 'border-primary/55 bg-primary/15 text-primary'
-                      : 'border-border/70 bg-secondary/60 hover:bg-secondary'
-                  )}
-                  title={player.name}
                 >
-                  <GripVertical className="h-3 w-3 opacity-60" />
-                  <span className="truncate">
-                    {player.jerseyNumber != null ? `#${player.jerseyNumber} ` : ''}
-                    {shortName(player.name)}
-                  </span>
-                </motion.button>
-              );
-            })}
+                  {player.jerseyNumber != null ? `#${player.jerseyNumber} ` : ''}
+                  {shortName(player.name)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {!bench.length && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5" /> No bench players yet.
           </div>
         )}
       </div>

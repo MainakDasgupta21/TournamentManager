@@ -32,6 +32,7 @@ import {
   AUDIT_ENTITY,
   AUDIT_ACTION,
   FOOTBALL_FORMATION_PRESETS,
+  FOOTBALL_SQUAD_PLAYER_COUNT,
   normalizeFootballFormationSlots,
 } from '@tms/shared/constants';
 
@@ -91,6 +92,26 @@ async function assertFootballFormationPlayers({ tournamentId, fixture, formation
       );
     }
   }
+}
+
+async function assertFootballSquadSizes({ tournamentId, fixture, formationBySide }) {
+  if (!formationBySide) return;
+  const sideSpecs = [
+    { key: 'teamA', teamId: fixture.teamA },
+    { key: 'teamB', teamId: fixture.teamB },
+  ];
+  const checks = sideSpecs.map(async (side) => {
+    const count = await Player.countDocuments({
+      tournamentId,
+      teamId: side.teamId,
+    });
+    if (count !== FOOTBALL_SQUAD_PLAYER_COUNT) {
+      throw ApiError.badRequest(
+        `${side.key} roster must contain exactly ${FOOTBALL_SQUAD_PLAYER_COUNT} players for football formation overrides (current: ${count})`
+      );
+    }
+  });
+  await Promise.all(checks);
 }
 
 /**
@@ -400,6 +421,11 @@ export const submitResult = asyncHandler(async (req, res) => {
   if (req.tournament.sportType === SPORTS.FOOTBALL) {
     const normalizedFormation = normalizeFormationBySide(sportResult.formation);
     sportResult = normalizedFormation ? { ...sportResult, formation: normalizedFormation } : sportResult;
+    await assertFootballSquadSizes({
+      tournamentId: req.tournament._id,
+      fixture,
+      formationBySide: normalizedFormation,
+    });
     await assertFootballFormationPlayers({
       tournamentId: req.tournament._id,
       fixture,
@@ -504,6 +530,11 @@ export const liveUpdate = asyncHandler(async (req, res) => {
   if (sport === SPORTS.FOOTBALL) {
     const normalizedFormation = normalizeFormationBySide(snapshot.formation);
     snapshot = normalizedFormation ? { ...snapshot, formation: normalizedFormation } : snapshot;
+    await assertFootballSquadSizes({
+      tournamentId: req.tournament._id,
+      fixture,
+      formationBySide: normalizedFormation,
+    });
     await assertFootballFormationPlayers({
       tournamentId: req.tournament._id,
       fixture,

@@ -568,6 +568,9 @@ export const FOOTBALL_FORMATION_PRESETS = Object.freeze({
 });
 export const FOOTBALL_FORMATION_PRESET_VALUES = Object.keys(FOOTBALL_FORMATION_PRESETS);
 export const FOOTBALL_FORMATION_SLOT_COUNT = 11;
+export const FOOTBALL_PITCH_PLAYER_COUNT = FOOTBALL_FORMATION_SLOT_COUNT;
+export const FOOTBALL_BENCH_PLAYER_COUNT = 15;
+export const FOOTBALL_SQUAD_PLAYER_COUNT = FOOTBALL_PITCH_PLAYER_COUNT + FOOTBALL_BENCH_PLAYER_COUNT;
 
 /**
  * Manually-assigned player tier/category (a draft/auction-style grading), from

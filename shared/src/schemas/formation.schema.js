@@ -3,6 +3,7 @@ import {
   FOOTBALL_FORMATION_PRESETS,
   FOOTBALL_FORMATION_PRESET_VALUES,
   FOOTBALL_FORMATION_SLOT_COUNT,
+  FOOTBALL_PITCH_PLAYER_COUNT,
   FOOTBALL_POSITION_VALUES,
 } from '../constants.js';
 import { objectId } from './common.js';
@@ -16,8 +17,8 @@ export const footballFormationSlotSchema = z.object({
 });
 
 /**
- * Football formation with fixed preset slots. Slots are always fully enumerated;
- * an unassigned slot simply has `playerId: null`.
+ * Football formation with fixed preset slots. Slots are always fully enumerated
+ * and every slot must be assigned for strict XI validation.
  */
 export const footballFormationSchema = z
   .object({
@@ -80,6 +81,13 @@ export const footballFormationSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'A player can only be assigned to one slot',
+        path: ['slots'],
+      });
+    }
+    if (assigned.length !== FOOTBALL_PITCH_PLAYER_COUNT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Formation must assign exactly ${FOOTBALL_PITCH_PLAYER_COUNT} players`,
         path: ['slots'],
       });
     }

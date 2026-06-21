@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Users } from 'lucide-react';
-import { SPORTS, footballPositionLabel, normalizeFootballPosition } from '@tms/shared/constants';
+import {
+  FOOTBALL_BENCH_PLAYER_COUNT,
+  FOOTBALL_PITCH_PLAYER_COUNT,
+  FOOTBALL_SQUAD_PLAYER_COUNT,
+  SPORTS,
+  footballPositionLabel,
+  normalizeFootballPosition,
+} from '@tms/shared/constants';
 import { cn } from '@/lib/utils';
 import FormationEditor from './FormationEditor';
 import {
@@ -171,7 +178,9 @@ export default function LineupPicker({
               </div>
               <p className="text-xs text-muted-foreground">
                 Override only this fixture. Use assign mode for player swaps and edit mode to drag
-                tactical cards freely on the pitch.
+                tactical cards freely on the pitch. Strict football rule: {FOOTBALL_PITCH_PLAYER_COUNT}{' '}
+                on pitch + {FOOTBALL_BENCH_PLAYER_COUNT} on bench ({FOOTBALL_SQUAD_PLAYER_COUNT} total)
+                per team.
               </p>
 
               <div className="grid gap-3 xl:grid-cols-2">

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FOOTBALL_PITCH_PLAYER_COUNT,
+  FOOTBALL_SQUAD_PLAYER_COUNT,
   FOOTBALL_FORMATION_PRESETS,
   inferFootballFormationPositions,
 } from '@tms/shared/constants';
 import { normalizeFormation, remapFormationPreset, slotsWithMeta } from '../../client/src/lib/formation.js';
+import { footballFormationSchema } from '../../shared/src/schemas/formation.schema.js';
 
 function bySlot(entries) {
   return Object.fromEntries(entries.map((entry) => [entry.slot, entry.position]));
@@ -15,6 +18,10 @@ function presetSlots(preset) {
     x: slot.x,
     y: slot.y,
   }));
+}
+
+function objectIdFor(index) {
+  return String(index + 1).padStart(24, '0');
 }
 
 describe('inferFootballFormationPositions regressions', () => {
@@ -120,5 +127,42 @@ describe('formation display regressions', () => {
 
     expect(meta).toHaveLength(11);
     expect(new Set(meta.map((slot) => slot.slot)).size).toBe(11);
+  });
+});
+
+describe('strict football XI validation', () => {
+  it('accepts a formation with exactly 11 assigned players', () => {
+    const payload = {
+      preset: '4-3-3',
+      slots: (FOOTBALL_FORMATION_PRESETS['4-3-3'] ?? []).map((slot, index) => ({
+        slot: slot.slot,
+        playerId: objectIdFor(index),
+        x: slot.x,
+        y: slot.y,
+      })),
+    };
+    const parsed = footballFormationSchema.safeParse(payload);
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects a formation when fewer than 11 players are assigned', () => {
+    const payload = {
+      preset: '4-3-3',
+      slots: (FOOTBALL_FORMATION_PRESETS['4-3-3'] ?? []).map((slot, index) => ({
+        slot: slot.slot,
+        playerId: index === 0 ? null : objectIdFor(index),
+        x: slot.x,
+        y: slot.y,
+      })),
+    };
+    const parsed = footballFormationSchema.safeParse(payload);
+    expect(parsed.success).toBe(false);
+    const issues = parsed.success ? [] : parsed.error.issues.map((issue) => issue.message);
+    expect(issues.some((msg) => msg.includes(String(FOOTBALL_PITCH_PLAYER_COUNT)))).toBe(true);
+  });
+
+  it('keeps strict squad arithmetic constants aligned', () => {
+    expect(FOOTBALL_SQUAD_PLAYER_COUNT).toBe(26);
+    expect(FOOTBALL_SQUAD_PLAYER_COUNT - FOOTBALL_PITCH_PLAYER_COUNT).toBe(15);
   });
 });

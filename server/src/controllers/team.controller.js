@@ -14,6 +14,7 @@ import {
   CRICKET_ROLES,
   FOOTBALL_POSITION_VALUES,
   FOOTBALL_FORMATION_PRESETS,
+  FOOTBALL_SQUAD_PLAYER_COUNT,
   FIXTURE_STATUS,
   normalizeFootballFormationSlots,
   normalizeFootballPosition,
@@ -31,6 +32,24 @@ function normalizeRoleForSport(sport, role) {
 }
 
 const id = (v) => (v == null ? null : String(v));
+
+async function assertFootballSquadSize({ teamId, tournamentId, exact = false }) {
+  const count = await Player.countDocuments({ teamId, tournamentId });
+  if (exact) {
+    if (count !== FOOTBALL_SQUAD_PLAYER_COUNT) {
+      throw ApiError.badRequest(
+        `Football teams must have exactly ${FOOTBALL_SQUAD_PLAYER_COUNT} players (current: ${count})`
+      );
+    }
+    return count;
+  }
+  if (count >= FOOTBALL_SQUAD_PLAYER_COUNT) {
+    throw ApiError.badRequest(
+      `Football teams can have at most ${FOOTBALL_SQUAD_PLAYER_COUNT} players`
+    );
+  }
+  return count;
+}
 
 function normalizeFootballFormationPayload(formation) {
   ensurePresetConfigured(formation?.preset);
@@ -186,6 +205,12 @@ export const updateTeamFormation = asyncHandler(async (req, res) => {
     return sendSuccess(res, { message: 'Team formation cleared', data: { team } });
   }
 
+  await assertFootballSquadSize({
+    teamId: team._id,
+    tournamentId: req.tournament._id,
+    exact: true,
+  });
+
   const normalizedFormation = normalizeFootballFormationPayload(defaultFormation);
   await assertFormationPlayersBelongToTeam({
     formation: normalizedFormation,
@@ -261,6 +286,14 @@ export const addPlayer = asyncHandler(async (req, res) => {
         req.tournament.sportType
       ).join(', ')}`
     );
+  }
+
+  if (req.tournament.sportType === SPORTS.FOOTBALL) {
+    await assertFootballSquadSize({
+      teamId: team._id,
+      tournamentId: req.tournament._id,
+      exact: false,
+    });
   }
 
   const player = await Player.create({
