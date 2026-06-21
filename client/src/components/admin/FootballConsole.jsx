@@ -190,14 +190,14 @@ export default function FootballConsole({
       </DialogHeader>
 
       {/* Scoreboard */}
-      <div className="surface-elevated flex items-center justify-center gap-4 rounded-2xl border border-border/75 p-4">
+      <div className="surface-elevated flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/75 p-3 sm:gap-4 sm:p-4">
         <span className="flex-1 truncate text-right text-sm font-medium">{teamName(teamAId)}</span>
-        <span className="font-display text-4xl tabular-nums tracking-[-0.02em]">{score.a} : {score.b}</span>
+        <span className="font-display text-3xl tabular-nums tracking-[-0.02em] sm:text-4xl">{score.a} : {score.b}</span>
         <span className="flex-1 truncate text-sm font-medium">{teamName(teamBId)}</span>
       </div>
 
-      <div className="flex items-end gap-2">
-        <div className="w-24 space-y-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="w-full max-w-28 space-y-1">
           <Label className="text-xs">Minute</Label>
           <Input type="number" min="0" max="130" value={minute} onChange={(e) => setMinute(e.target.value)} placeholder="min" className="h-9" />
         </div>
@@ -207,7 +207,7 @@ export default function FootballConsole({
       {/* Add goal */}
       <div className="surface-elevated space-y-2 rounded-2xl border border-border/75 p-3">
         <p className="flex items-center gap-1.5 text-sm font-semibold"><Goal className="h-4 w-4 text-accent" /> Goal</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Select value={goalForm.team} onValueChange={(v) => setGoalForm({ ...goalForm, team: v, playerId: '', assistId: '' })}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -231,7 +231,7 @@ export default function FootballConsole({
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="surface-elevated space-y-2 rounded-2xl border border-border/75 p-3">
           <p className="flex items-center gap-1.5 text-sm font-semibold"><Square className="h-4 w-4 text-[hsl(var(--warning))]" /> Card</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Select value={cardForm.team} onValueChange={(v) => setCardForm({ ...cardForm, team: v, playerId: '' })}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -257,7 +257,7 @@ export default function FootballConsole({
               <SelectItem value={teamBId}>{teamsById[teamBId]?.shortCode}</SelectItem>
             </SelectContent>
           </Select>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <PlayerSelect value={subForm.playerOutId} onChange={(v) => setSubForm({ ...subForm, playerOutId: v })} players={rosterFor(subForm.team)} placeholder="Out" />
             <PlayerSelect value={subForm.playerInId} onChange={(v) => setSubForm({ ...subForm, playerInId: v })} players={rosterFor(subForm.team)} placeholder="In" />
           </div>
@@ -302,7 +302,7 @@ export default function FootballConsole({
       {isKnockout && score.a === score.b && (
         <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Penalty shootout (knockout tie)</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1"><Label className="text-xs">{teamsById[teamAId]?.shortCode} pens</Label><Input type="number" min="0" value={pens.teamA} onChange={(e) => setPens({ ...pens, teamA: e.target.value })} className="h-9" /></div>
             <div className="space-y-1"><Label className="text-xs">{teamsById[teamBId]?.shortCode} pens</Label><Input type="number" min="0" value={pens.teamB} onChange={(e) => setPens({ ...pens, teamB: e.target.value })} className="h-9" /></div>
           </div>

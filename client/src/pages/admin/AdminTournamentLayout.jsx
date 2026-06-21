@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useParams, Link } from 'react-router-dom';
+import { NavLink, Outlet, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Settings,
@@ -24,6 +24,7 @@ import { TournamentStatusBadge } from '@/components/ui/status-badge';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/misc';
 import NotificationBell from '@/components/NotificationBell';
 import PageTransition from '@/components/layout/PageTransition';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sportLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,8 @@ const NAV = [
 
 export default function AdminTournamentLayout() {
   const { id } = useParams();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useTournament(id);
   const requestAccess = useRequestTournamentAccess();
   // Keep admin views live too, so a result entered elsewhere refreshes here.
@@ -83,6 +86,15 @@ export default function AdminTournamentLayout() {
   }
 
   const requestStatus = t.myAccessRequest?.status;
+  const navItems = NAV.map((item) => ({
+    ...item,
+    href: item.to ? `/admin/t/${id}/${item.to}` : `/admin/t/${id}`,
+  }));
+  const activeNav =
+    navItems.find((item) =>
+      item.end ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+    )?.href ?? navItems[0]?.href;
+
   const onRequestAccess = async () => {
     try {
       await requestAccess.mutateAsync({ tournamentId: id });
@@ -177,14 +189,28 @@ export default function AdminTournamentLayout() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          <nav className="surface-elevated flex gap-1 overflow-x-auto rounded-2xl p-2.5 scrollbar-thin lg:flex-col">
-            {NAV.map((item) => {
+        <aside className="min-w-0 lg:sticky lg:top-[calc(var(--admin-chrome-h)+1rem)] lg:self-start">
+          <div className="lg:hidden">
+            <Select value={activeNav} onValueChange={(value) => navigate(value)}>
+              <SelectTrigger aria-label="Select admin section">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {navItems.map((item) => (
+                  <SelectItem key={item.href} value={item.href}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <nav className="surface-elevated hidden gap-1 overflow-x-auto rounded-2xl p-2.5 scrollbar-thin lg:flex lg:flex-col">
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
-                  key={item.to}
-                  to={item.to ? `/admin/t/${id}/${item.to}` : `/admin/t/${id}`}
+                  key={item.href}
+                  to={item.href}
                   end={item.end}
                   className={({ isActive }) =>
                     cn(

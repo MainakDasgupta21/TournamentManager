@@ -136,7 +136,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
 
       <div className="surface-elevated rounded-2xl border border-border/75 p-3">
         <p className="mb-2 text-sm font-semibold">{teamName(battingFirst)} (1st innings)</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Num label="Runs" value={inn1.runs} onChange={(v) => setInn1({ ...inn1, runs: v })} />
           <Num label="Wickets" value={inn1.wickets} onChange={(v) => setInn1({ ...inn1, wickets: v })} />
           <Num label="Overs" value={inn1.overs} step="0.1" onChange={(v) => setInn1({ ...inn1, overs: v })} />
@@ -145,14 +145,14 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
 
       <div className="surface-elevated rounded-2xl border border-border/75 p-3">
         <p className="mb-2 text-sm font-semibold">{teamName(secondBatting)} (2nd innings)</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Num label="Runs" value={inn2.runs} onChange={(v) => setInn2({ ...inn2, runs: v })} />
           <Num label="Wickets" value={inn2.wickets} onChange={(v) => setInn2({ ...inn2, wickets: v })} />
           <Num label="Overs" value={inn2.overs} step="0.1" onChange={(v) => setInn2({ ...inn2, overs: v })} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">Outcome</Label>
           <Select value={outcome} onValueChange={setOutcome}>
@@ -166,7 +166,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
           </Select>
         </div>
         {outcome !== 'tie' && outcome !== 'noResult' && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs">Margin by</Label>
               <Select value={marginType} onValueChange={setMarginType}>
@@ -185,7 +185,7 @@ function CricketForm({ fixture, tournament, onSubmit, submitting, rosterByTeam, 
       {tiedKnockout && (
         <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Super Over (knockout tie)</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid grid-cols-2 gap-2">
               <Num label={`${teamA.name} runs`} value={superOver.aRuns} onChange={(v) => setSuperOver({ ...superOver, aRuns: v })} />
               <Num label="Wkts" value={superOver.aWkts} onChange={(v) => setSuperOver({ ...superOver, aWkts: v })} />
@@ -294,7 +294,7 @@ function FootballForm({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Num label={`${teamA.name} goals`} value={goalsA} onChange={setGoalsA} />
         <Num label={`${teamB.name} goals`} value={goalsB} onChange={setGoalsB} />
       </div>
@@ -302,7 +302,7 @@ function FootballForm({
       {isKnockout && drawn && (
         <div className="surface-elevated rounded-2xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] p-3">
           <p className="mb-2 text-sm font-medium text-[hsl(var(--warning))]">Penalty shootout (knockout tie)</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Num label={`${teamA.name} pens`} value={penA} onChange={setPenA} />
             <Num label={`${teamB.name} pens`} value={penB} onChange={setPenB} />
           </div>
@@ -364,7 +364,7 @@ export default function ResultEntryDialog({ tournament, tournamentId, fixture, o
   };
 
   return (
-    <DialogContent className="max-w-2xl">
+    <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-2xl p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6">
       <DialogHeader>
         <DialogTitle>Enter result</DialogTitle>
         <DialogDescription>

@@ -5,6 +5,10 @@
 
 :root {
   --radius: 1rem;
+  --header-h: 4rem;
+  --tabbar-h: 3.5rem;
+  --public-sticky-h: calc(var(--header-h) + var(--tabbar-h));
+  --admin-chrome-h: var(--header-h);
 
   /* Premium light palette (default for no-JS / `.light`). */
   --background: 220 34% 97%;

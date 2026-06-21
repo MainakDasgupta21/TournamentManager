@@ -110,7 +110,7 @@ export default function FormationEditor({
     setDraggingPlayerId(null);
   };
 
-  const pitchHeight = compact ? 'h-[340px]' : 'h-[440px]';
+  const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
   return (
     <div className="space-y-3">
@@ -150,15 +150,15 @@ export default function FormationEditor({
 
       <div
         className={cn(
-          'relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-[hsl(var(--success)/0.2)] via-[hsl(var(--success)/0.1)] to-[hsl(var(--success)/0.22)] p-3',
-          pitchHeight
+          'relative w-full overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-[hsl(var(--success)/0.2)] via-[hsl(var(--success)/0.1)] to-[hsl(var(--success)/0.22)] p-3',
+          pitchSize
         )}
       >
         <div className="pointer-events-none absolute inset-3 rounded-xl border border-white/25" />
         <div className="pointer-events-none absolute inset-x-3 top-1/2 h-px -translate-y-1/2 bg-white/20" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
-        <div className="pointer-events-none absolute bottom-3 left-1/2 h-7 w-24 -translate-x-1/2 rounded-t-xl border border-b-0 border-white/20" />
-        <div className="pointer-events-none absolute top-3 left-1/2 h-7 w-24 -translate-x-1/2 rounded-b-xl border border-t-0 border-white/20" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
+        <div className="pointer-events-none absolute bottom-3 left-1/2 h-[12%] w-[22%] -translate-x-1/2 rounded-t-xl border border-b-0 border-white/20" />
+        <div className="pointer-events-none absolute top-3 left-1/2 h-[12%] w-[22%] -translate-x-1/2 rounded-b-xl border border-t-0 border-white/20" />
 
         <AnimatePresence>
           {slots.map((slot) => {
@@ -185,7 +185,7 @@ export default function FormationEditor({
                 onClick={() => onSlotClick(slot)}
                 disabled={!canAssign}
                 className={cn(
-                  'absolute w-[96px] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-2 py-1.5 text-left shadow-md backdrop-blur-[1px] transition-all',
+                  'absolute w-[clamp(4.5rem,20%,6.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border px-[clamp(0.35rem,1vw,0.5rem)] py-[clamp(0.3rem,0.9vw,0.45rem)] text-left shadow-md backdrop-blur-[1px] transition-all',
                   SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid,
                   canAssign && 'surface-interactive',
                   selected && 'ring-2 ring-primary',
@@ -193,13 +193,13 @@ export default function FormationEditor({
                 )}
                 style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
               >
-                <p className="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
                   {slot.label}
                 </p>
                 {player ? (
                   <>
-                    <p className="truncate text-xs font-semibold">{shortName(player.name)}</p>
-                    <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <p className="truncate text-[clamp(0.56rem,2.1vw,0.75rem)] font-semibold">{shortName(player.name)}</p>
+                    <div className="mt-0.5 flex items-center gap-1 text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">
                       {player.jerseyNumber != null && (
                         <span className="rounded bg-background/50 px-1 py-0.5 tabular-nums">
                           #{player.jerseyNumber}
@@ -209,7 +209,7 @@ export default function FormationEditor({
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Unassigned</p>
+                  <p className="text-[clamp(0.56rem,2vw,0.75rem)] text-muted-foreground">Unassigned</p>
                 )}
               </motion.button>
             );

@@ -46,7 +46,7 @@ function outcomeLine(fixture, sport) {
 
 function TeamRow({ team, placeholder, score, sub, isWinner, tournamentId, onNavigate }) {
   const inner = (
-    <div className={cn('flex items-center gap-3 rounded-xl border border-transparent p-3 transition-colors', isWinner ? 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)]' : 'hover:border-border/70 hover:bg-secondary/40')}>
+    <div className={cn('flex items-center gap-3 rounded-xl border border-transparent p-2.5 transition-colors sm:p-3', isWinner ? 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success)/0.08)]' : 'hover:border-border/70 hover:bg-secondary/40')}>
       {team ? <TeamCrest team={team} size="md" /> : <div className="h-9 w-9 rounded-md bg-secondary" />}
       <div className="min-w-0 flex-1">
         <p className={cn('truncate', isWinner ? 'font-semibold' : 'font-medium')}>
@@ -125,7 +125,7 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate, formationBy
   const line = completed ? outcomeLine(fixture, sport) : '';
 
   return (
-    <div className="space-y-5 p-5">
+    <div className="space-y-5 p-4 sm:p-5">
       {isLive && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
           <Radio className="h-4 w-4" /> Live now
@@ -162,7 +162,7 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate, formationBy
 
       {tournamentId && fixture._id && (
         <SheetClose asChild>
-          <Button asChild className="w-full">
+          <Button asChild className="min-h-11 w-full">
             <Link to={`/t/${tournamentId}/match/${fixture._id}`}>
               {isLive ? <Radio className="live-dot" /> : <BarChart3 />}
               Open Match Center
@@ -222,14 +222,14 @@ function MatchBody({ fixture, sport, live, tournamentId, onNavigate, formationBy
         <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
           {fixture.teamA && (
             <SheetClose asChild>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
                 <Link to={`/t/${tournamentId}/teams/${fixture.teamA._id}`}>{fixture.teamA.shortCode || fixture.teamA.name} <ArrowRight /></Link>
               </Button>
             </SheetClose>
           )}
           {fixture.teamB && (
             <SheetClose asChild>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
                 <Link to={`/t/${tournamentId}/teams/${fixture.teamB._id}`}>{fixture.teamB.shortCode || fixture.teamB.name} <ArrowRight /></Link>
               </Button>
             </SheetClose>
@@ -276,7 +276,7 @@ export default function MatchDetail({ fixture, sport, live, tournamentId, onOpen
 
   return (
     <Sheet open={!!fixture} onOpenChange={(o) => !o && onOpenChange(false)}>
-      <SheetContent side="right" className="w-full max-w-lg p-0">
+      <SheetContent side="right" className="w-full max-w-[min(100vw,34rem)] p-0">
         <SheetHeader>
           <div className="flex items-center justify-between gap-3 pr-8">
             <SheetTitle className="truncate text-sm font-medium text-muted-foreground">

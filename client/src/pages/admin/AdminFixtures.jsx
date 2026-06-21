@@ -373,7 +373,7 @@ export default function AdminFixtures() {
       <div className="space-y-6">
         {groupByRound(list).map((round) => (
           <div key={round.key}>
-            <h3 className="sticky top-16 z-20 mb-2 rounded-xl border border-border/70 bg-background/90 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <h3 className="sticky top-[var(--admin-chrome-h)] z-20 mb-2 rounded-xl border border-border/70 bg-background/90 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/75">
               {round.label}
               <span className="ml-2 font-normal normal-case text-muted-foreground/70">
                 {round.fixtures.length} {round.fixtures.length === 1 ? 'match' : 'matches'}

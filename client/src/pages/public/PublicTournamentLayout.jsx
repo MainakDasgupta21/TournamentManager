@@ -194,7 +194,7 @@ export default function PublicTournamentLayout() {
       </div>
 
       {/* Tab bar */}
-      <div className="sticky top-16 z-30 border-b border-border/60 bg-background/82 backdrop-blur-2xl">
+      <div className="sticky top-[var(--header-h)] z-30 border-b border-border/60 bg-background/82 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto scrollbar-thin px-4 py-2 sm:px-6">
           <Tab to={`/t/${id}`} label="Overview" end />
           <Tab to={`/t/${id}/standings`} label="Standings" />

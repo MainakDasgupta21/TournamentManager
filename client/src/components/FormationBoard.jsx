@@ -36,7 +36,7 @@ export default function FormationBoard({
 
   const normalized = normalizeFormation(formation);
   const slots = slotsWithMeta(normalized);
-  const pitchHeight = compact ? 'h-[250px]' : 'h-[350px]';
+  const pitchSize = compact ? 'aspect-[4/3]' : 'aspect-[16/10]';
 
   return (
     <div className={cn('space-y-2 rounded-xl border border-border/70 bg-card/70 p-3', className)}>
@@ -48,13 +48,13 @@ export default function FormationBoard({
 
       <div
         className={cn(
-          'relative overflow-hidden rounded-xl border border-border/70 bg-gradient-to-b from-[hsl(var(--success)/0.2)] via-[hsl(var(--success)/0.1)] to-[hsl(var(--success)/0.22)]',
-          pitchHeight
+          'relative w-full overflow-hidden rounded-xl border border-border/70 bg-gradient-to-b from-[hsl(var(--success)/0.2)] via-[hsl(var(--success)/0.1)] to-[hsl(var(--success)/0.22)]',
+          pitchSize
         )}
       >
         <div className="pointer-events-none absolute inset-2 rounded-lg border border-white/20" />
         <div className="pointer-events-none absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-white/20" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[18%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
 
         {slots.map((slot) => {
           const player = slot.playerId ? playersById[String(slot.playerId)] : null;
@@ -62,24 +62,24 @@ export default function FormationBoard({
             <div
               key={`${normalized.preset}-${slot.slot}`}
               className={cn(
-                'absolute w-[82px] -translate-x-1/2 -translate-y-1/2 rounded-lg border px-1.5 py-1 text-left shadow-md',
+                'absolute w-[clamp(4rem,18%,5.5rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border px-1.5 py-1 text-left shadow-md',
                 SLOT_LINE_STYLES[slot.line] ?? SLOT_LINE_STYLES.mid
               )}
               style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             >
-              <p className="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <p className="truncate text-[clamp(0.5rem,1.8vw,0.625rem)] font-bold uppercase tracking-wider text-muted-foreground">
                 {slot.label}
               </p>
               {player ? (
                 <>
-                  <p className="truncate text-[11px] font-semibold">{shortName(player.name)}</p>
-                  <p className="truncate text-[10px] text-muted-foreground">
+                  <p className="truncate text-[clamp(0.56rem,2.1vw,0.69rem)] font-semibold">{shortName(player.name)}</p>
+                  <p className="truncate text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">
                     {player.jerseyNumber != null ? `#${player.jerseyNumber} · ` : ''}
                     {player.role || 'Player'}
                   </p>
                 </>
               ) : (
-                <p className="text-[10px] text-muted-foreground">Unassigned</p>
+                <p className="text-[clamp(0.5rem,1.7vw,0.625rem)] text-muted-foreground">Unassigned</p>
               )}
             </div>
           );

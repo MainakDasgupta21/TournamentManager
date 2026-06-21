@@ -1,10 +1,13 @@
 import { Goal, Square, ArrowLeftRight } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
 
 /**
  * Football match timeline (Module 8): a 0–90' axis with each goal / card / sub
  * pinned to its minute, Team A above the line and Team B below it.
  */
 export default function MatchTimeline({ goals = [], cards = [], substitutions = [], teamA, teamB, teamsById = {} }) {
+  const compact = useMediaQuery('(max-width: 639px)');
   const events = [
     ...goals.map((g, i) => {
       const isOG = g.type === 'ownGoal';
@@ -27,6 +30,7 @@ export default function MatchTimeline({ goals = [], cards = [], substitutions = 
   const maxMin = Math.max(90, ...events.map((e) => Number(e.minute) || 0));
   const aId = String(teamA);
   const pct = (m) => `${Math.min(100, (Number(m) / maxMin) * 100)}%`;
+  const markerSpread = compact ? 11 : 16;
 
   const Marker = ({ e }) => {
     const common = 'flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-background';
@@ -47,11 +51,11 @@ export default function MatchTimeline({ goals = [], cards = [], substitutions = 
       byMinute.get(k).push(e);
     }
     return (
-      <div className="relative h-9">
+      <div className={cn('relative', compact ? 'h-10' : 'h-9')}>
         {list.map((e) => {
           const group = byMinute.get(String(e.minute));
           const idx = group.indexOf(e);
-          const offset = (idx - (group.length - 1) / 2) * 16;
+          const offset = (idx - (group.length - 1) / 2) * markerSpread;
           return (
             <div
               key={e.key}
@@ -69,19 +73,30 @@ export default function MatchTimeline({ goals = [], cards = [], substitutions = 
 
   return (
     <div className="surface-elevated w-full rounded-2xl border border-border/70 p-4">
-      <div className="mb-1 flex justify-between text-xs font-medium text-muted-foreground">
-        <span>{teamsById[aId]?.shortCode || 'A'}</span>
-        <span>{teamsById[String(teamB)]?.shortCode || 'B'}</span>
+      <div className="overflow-x-auto pb-1 scrollbar-thin">
+        <div className={cn(compact && 'min-w-[30rem]')}>
+          <div className="mb-1 flex justify-between text-xs font-medium text-muted-foreground">
+            <span>{teamsById[aId]?.shortCode || 'A'}</span>
+            <span>{teamsById[String(teamB)]?.shortCode || 'B'}</span>
+          </div>
+          <Row teamId={aId} above />
+          <div className="relative h-px bg-border/85">
+            {[0, 15, 30, 45, 60, 75, 90].filter((m) => m <= maxMin).map((m) => (
+              <span
+                key={m}
+                className={cn(
+                  'absolute -translate-x-1/2 -top-2 tabular-nums text-muted-foreground',
+                  compact ? 'text-[11px]' : 'text-[10px]'
+                )}
+                style={{ left: pct(m) }}
+              >
+                {m}'
+              </span>
+            ))}
+          </div>
+          <Row teamId={String(teamB)} above={false} />
+        </div>
       </div>
-      <Row teamId={aId} above />
-      <div className="relative h-px bg-border/85">
-        {[0, 15, 30, 45, 60, 75, 90].filter((m) => m <= maxMin).map((m) => (
-          <span key={m} className="absolute -translate-x-1/2 -top-2 text-[10px] tabular-nums text-muted-foreground" style={{ left: pct(m) }}>
-            {m}'
-          </span>
-        ))}
-      </div>
-      <Row teamId={String(teamB)} above={false} />
     </div>
   );
 }

@@ -248,17 +248,17 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       </DialogHeader>
 
       {/* Scoreboard */}
-      <div className="surface-elevated rounded-2xl border border-border/75 p-4">
-        <div className="flex items-end justify-between">
+      <div className="surface-elevated rounded-2xl border border-border/75 p-3 sm:p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{teamName(cur.battingTeam)} batting</p>
-            <p className="font-display text-4xl tabular-nums">
-              {summary.runs}<span className="text-2xl text-muted-foreground">/{summary.wickets}</span>
+            <p className="font-display text-3xl tabular-nums sm:text-4xl">
+              {summary.runs}<span className="text-xl text-muted-foreground sm:text-2xl">/{summary.wickets}</span>
             </p>
           </div>
           <div className="text-right">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Overs</p>
-            <p className="font-display text-3xl tabular-nums">{summary.overs}</p>
+            <p className="font-display text-2xl tabular-nums sm:text-3xl">{summary.overs}</p>
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1">
@@ -274,7 +274,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
       </div>
 
       {/* Innings switcher */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {innings.map((inn, i) => (
           <Button key={i} size="sm" variant={i === idx ? 'secondary' : 'ghost'} onClick={() => { setIdx(i); resetPositions(); }}>
             Inns {i + 1}: {teamsById[inn.battingTeam]?.shortCode}
@@ -367,7 +367,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
               </Select>
             </div>
             {finalize.winner && finalize.winner !== 'tie' && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label className="text-xs">By</Label>
                   <Select value={finalize.marginType} onValueChange={(v) => setFinalize({ ...finalize, marginType: v })}>
@@ -391,7 +391,7 @@ export default function CricketConsole({ tournament, tournamentId, fixture, rost
             <div className="space-y-2 rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.06)] p-3">
               <p className="text-sm font-semibold text-[hsl(var(--warning))]">Super Over — match tied</p>
               <p className="text-xs text-muted-foreground">Enter each side&apos;s one-over total. The higher score advances.</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
                   { id: teamAId, runsKey: 'aRuns', wktsKey: 'aWkts' },
                   { id: teamBId, runsKey: 'bRuns', wktsKey: 'bWkts' },

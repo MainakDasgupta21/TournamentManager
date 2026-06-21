@@ -34,7 +34,7 @@ export default function LiveScoring({ tournament, tournamentId, fixture, onClose
   const Console = tournament.sportType === SPORTS.CRICKET ? CricketConsole : FootballConsole;
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-3xl p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6">
       {failed ? (
         <div className="py-6">
           <ErrorState

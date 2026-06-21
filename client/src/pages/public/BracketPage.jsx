@@ -8,14 +8,24 @@ import { PageHeader } from '@/components/ui/page-header';
 
 function BracketSkeleton() {
   return (
-    <div className="surface-elevated flex gap-8 overflow-hidden rounded-2xl border border-border/70 p-5">
-      {[4, 2, 1].map((count, col) => (
-        <div key={col} className="flex flex-1 flex-col justify-around gap-4">
-          {Array.from({ length: count }).map((_, i) => (
-            <Skeleton key={i} className="h-[68px] w-60" />
+    <div className="space-y-4">
+      <div className="surface-elevated rounded-2xl border border-border/70 p-4 lg:hidden">
+        <Skeleton className="h-9 w-full sm:w-60" />
+        <div className="mx-auto mt-4 w-full max-w-[min(18rem,88vw)] space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[68px] w-full" />
           ))}
         </div>
-      ))}
+      </div>
+      <div className="surface-elevated hidden gap-8 overflow-hidden rounded-2xl border border-border/70 p-5 lg:flex">
+        {[4, 2, 1].map((count, col) => (
+          <div key={col} className="flex flex-1 flex-col justify-around gap-4">
+            {Array.from({ length: count }).map((_, i) => (
+              <Skeleton key={i} className="h-[68px] w-60" />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

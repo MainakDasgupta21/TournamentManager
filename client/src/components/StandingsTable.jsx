@@ -63,6 +63,14 @@ export default function StandingsTable({
     : ['played', 'won', 'goalDifference', 'points']; // P, W, GD, Pts
   const cols = compact ? allCols.filter(([, key]) => compactKeys.includes(key)) : allCols;
 
+  const columnVisibility = (key) => {
+    if (compact) return '';
+    if (['drawn', 'lost'].includes(key)) return 'hidden sm:table-cell';
+    if (isCricket && key === 'noResult') return 'hidden md:table-cell';
+    if (!isCricket && ['goalsFor', 'goalsAgainst'].includes(key)) return 'hidden md:table-cell';
+    return '';
+  };
+
   // In compact mode the reduced set fits without horizontal scrolling, so the
   // #/Team columns don't need to be frozen (dropping the opaque bg also removes
   // the seam against the panel's elevated surface).
@@ -85,12 +93,13 @@ export default function StandingsTable({
           <tr className="border-b border-border/70 text-[10px] uppercase tracking-wider text-muted-foreground sm:text-[11px]">
             <th scope="col" className={cn('w-10 px-2 py-3 text-left font-semibold', frozenRank)}>#</th>
             <th scope="col" className={cn('border-r border-border/40 px-2 py-3 text-left font-semibold', frozenTeam)}>Team</th>
-            {cols.map(([label]) => (
+            {cols.map(([label, key]) => (
               <th
                 key={label}
                 scope="col"
                 className={cn(
                   'whitespace-nowrap px-2 py-3 text-center font-semibold',
+                  columnVisibility(key),
                   label === 'Pts' && 'bg-primary/[0.06] text-foreground'
                 )}
               >
@@ -162,6 +171,7 @@ export default function StandingsTable({
                     className={cn(
                       'px-2 text-center tabular-nums',
                       cellY,
+                      columnVisibility(key),
                       key === 'points' && 'bg-primary/[0.06] font-bold text-foreground',
                       key !== 'points' && 'text-muted-foreground'
                     )}

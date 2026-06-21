@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { overSeries, hasBallDetail } from '@/lib/cricketSeries';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const W = 520;
-const H = 220;
-const PAD = { top: 16, right: 16, bottom: 28, left: 36 };
+const BASE_H = 220;
+const BASE_PAD = { top: 16, right: 16, bottom: 28, left: 36 };
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))'];
 
 /**
@@ -11,6 +12,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))'];
  * you can compare the two chases at a glance. Hand-rolled SVG (no chart dep).
  */
 export default function WormChart({ innings = [], teamsById = {} }) {
+  const isCompact = useMediaQuery('(max-width: 639px)');
   const series = useMemo(
     () =>
       innings
@@ -25,6 +27,10 @@ export default function WormChart({ innings = [], teamsById = {} }) {
 
   if (!innings.some(hasBallDetail)) return null;
 
+  const H = isCompact ? 252 : BASE_H;
+  const PAD = isCompact ? { top: 18, right: 18, bottom: 34, left: 40 } : BASE_PAD;
+  const axisFontSize = isCompact ? 11 : 9;
+
   const maxOver = Math.max(...series.flatMap((s) => s.points.map((p) => p.over)), 1);
   const maxCum = Math.max(...series.flatMap((s) => s.points.map((p) => p.cum)), 1);
 
@@ -35,27 +41,33 @@ export default function WormChart({ innings = [], teamsById = {} }) {
 
   return (
     <div className="w-full overflow-hidden">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Cumulative runs worm chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full"
+        role="img"
+        aria-label="Cumulative runs worm chart"
+      >
         {/* horizontal grid + y labels */}
         {gridY.map((val, gi) => (
           // Key by index: grid values can repeat (e.g. all 0 when no runs yet),
           // which would otherwise produce duplicate React keys.
           <g key={gi}>
             <line x1={PAD.left} y1={y(val)} x2={W - PAD.right} y2={y(val)} stroke="hsl(var(--border))" strokeWidth="1" opacity="0.5" />
-            <text x={PAD.left - 6} y={y(val) + 3} textAnchor="end" className="fill-muted-foreground" fontSize="9">{val}</text>
+            <text x={PAD.left - 6} y={y(val) + 3} textAnchor="end" className="fill-muted-foreground" fontSize={axisFontSize}>{val}</text>
           </g>
         ))}
         {/* x label */}
-        <text x={W - PAD.right} y={H - 6} textAnchor="end" className="fill-muted-foreground" fontSize="9">{maxOver} ov</text>
+        <text x={W - PAD.right} y={H - 6} textAnchor="end" className="fill-muted-foreground" fontSize={axisFontSize}>{maxOver} ov</text>
 
         {series.map((s, i) => {
           const color = COLORS[i % COLORS.length];
           const d = s.points.map((p, j) => `${j === 0 ? 'M' : 'L'} ${x(p.over).toFixed(1)} ${y(p.cum).toFixed(1)}`).join(' ');
           return (
             <g key={i}>
-              <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              <path d={d} fill="none" stroke={color} strokeWidth={isCompact ? 2.75 : 2.5} strokeLinejoin="round" strokeLinecap="round" />
               {s.wickets.map((w, k) => (
-                <circle key={k} cx={x(w.over)} cy={y(w.cum)} r="3.5" fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth="1.5" />
+                <circle key={k} cx={x(w.over)} cy={y(w.cum)} r={isCompact ? 4 : 3.5} fill="hsl(var(--destructive))" stroke="hsl(var(--background))" strokeWidth="1.5" />
               ))}
             </g>
           );

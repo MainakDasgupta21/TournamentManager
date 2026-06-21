@@ -167,6 +167,12 @@ function StatBoard({ board, rows, tournamentId }) {
     );
   }
   const isTeam = board.entity === 'team';
+  const columnVisibility = (column, index) => {
+    if (board.columns.length <= 4) return '';
+    if (column.strong || index === 0) return '';
+    if (index <= 2) return 'hidden sm:table-cell';
+    return 'hidden md:table-cell';
+  };
   return (
     <div className="overflow-x-auto scrollbar-thin">
       <table className="w-full text-sm">
@@ -174,8 +180,16 @@ function StatBoard({ board, rows, tournamentId }) {
           <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <th className="sticky left-0 z-10 w-10 bg-card px-2 py-2.5 text-center">#</th>
             <th className="sticky left-10 z-10 border-r border-border/40 bg-card px-2 py-2.5">{isTeam ? 'Team' : 'Player'}</th>
-            {board.columns.map((c) => (
-              <th key={c.label} className="whitespace-nowrap px-2 py-2.5 text-right tabular-nums">{c.label}</th>
+            {board.columns.map((c, index) => (
+              <th
+                key={c.label}
+                className={cn(
+                  'whitespace-nowrap px-2 py-2.5 text-right tabular-nums',
+                  columnVisibility(c, index)
+                )}
+              >
+                {c.label}
+              </th>
             ))}
           </tr>
         </thead>
@@ -194,11 +208,12 @@ function StatBoard({ board, rows, tournamentId }) {
               <td className="sticky left-10 z-10 border-r border-border/40 bg-card px-2 py-2.5">
                 {isTeam ? <TeamCell team={row.team} /> : <PlayerCell tournamentId={tournamentId} player={row.player} />}
               </td>
-              {board.columns.map((c) => (
+              {board.columns.map((c, index) => (
                 <td
                   key={c.label}
                   className={cn(
                     'whitespace-nowrap px-2 py-2.5 text-right tabular-nums',
+                    columnVisibility(c, index),
                     c.strong ? 'font-bold' : 'text-muted-foreground'
                   )}
                 >

@@ -64,7 +64,7 @@ export default function ImageUpload({ label, value, onChange, hint, variant = 'l
   return (
     <div className="space-y-1.5">
       {label && <Label>{label}</Label>}
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div
           className={cn(
             'flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary/40',
@@ -79,12 +79,13 @@ export default function ImageUpload({ label, value, onChange, hint, variant = 'l
         </div>
 
         <div className="flex-1 space-y-2">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPick} />
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="min-h-11 sm:min-h-9"
               onClick={() => fileRef.current?.click()}
               disabled={upload.isPending}
             >
@@ -96,6 +97,7 @@ export default function ImageUpload({ label, value, onChange, hint, variant = 'l
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="min-h-11 sm:min-h-9"
                 onClick={() => {
                   setInputValue('');
                   onChange('');

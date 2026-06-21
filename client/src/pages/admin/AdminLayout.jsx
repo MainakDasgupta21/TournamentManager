@@ -6,6 +6,7 @@ import { useUsers, useTournamentAccessRequests } from '@/hooks/queries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageTransition from '@/components/layout/PageTransition';
 import CommandPalette, { openCommandPalette } from '@/components/CommandPalette';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -53,6 +54,22 @@ export default function AdminLayout() {
     { enabled: isSuperAdmin, refetchInterval: 60_000 }
   );
   const tournamentPendingCount = pendingTournamentData?.pendingCount ?? 0;
+  const superAdminNav = [
+    { to: '/admin', end: true, icon: LayoutDashboard, label: 'Overview', badge: 0 },
+    { to: '/admin/users', icon: ShieldCheck, label: 'User requests', badge: userPendingCount },
+    {
+      to: '/admin/tournament-access',
+      icon: UserCog,
+      label: 'Tournament access',
+      badge: tournamentPendingCount,
+    },
+  ];
+  const activeSuperAdmin =
+    superAdminNav.find((item) =>
+      item.end
+        ? pathname === item.to
+        : pathname === item.to || pathname.startsWith(`${item.to}/`)
+    )?.to ?? '/admin';
 
   // Keep the chrome mounted across a tournament's admin sections.
   const sectionKey = pathname.startsWith('/admin/t/')
@@ -66,7 +83,10 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="relative min-h-screen">
+    <div
+      className="relative min-h-screen"
+      style={{ '--admin-chrome-h': isSuperAdmin ? '7rem' : '4rem' }}
+    >
       <a
         href="#admin-main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-[var(--shadow-soft)]"
@@ -118,19 +138,37 @@ export default function AdminLayout() {
         </div>
         {isSuperAdmin && (
           <div className="border-t border-border/60">
-            <nav
-              className="page-shell flex h-12 items-center gap-2 overflow-x-auto px-4 scrollbar-thin sm:px-6 lg:px-8"
-              aria-label="Super admin navigation"
-            >
-              <SuperAdminNavLink to="/admin" end icon={LayoutDashboard} label="Overview" />
-              <SuperAdminNavLink to="/admin/users" icon={ShieldCheck} label="User requests" badge={userPendingCount} />
-              <SuperAdminNavLink
-                to="/admin/tournament-access"
-                icon={UserCog}
-                label="Tournament access"
-                badge={tournamentPendingCount}
-              />
-            </nav>
+            <div className="page-shell px-4 py-2 sm:px-6 lg:px-8">
+              <div className="sm:hidden">
+                <Select value={activeSuperAdmin} onValueChange={(value) => navigate(value)}>
+                  <SelectTrigger aria-label="Select super admin section">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {superAdminNav.map((item) => (
+                      <SelectItem key={item.to} value={item.to}>
+                        {item.badge > 0 ? `${item.label} (${item.badge})` : item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <nav
+                className="hidden h-12 items-center gap-2 overflow-x-auto scrollbar-thin sm:flex"
+                aria-label="Super admin navigation"
+              >
+                {superAdminNav.map((item) => (
+                  <SuperAdminNavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    icon={item.icon}
+                    label={item.label}
+                    badge={item.badge}
+                  />
+                ))}
+              </nav>
+            </div>
           </div>
         )}
       </header>

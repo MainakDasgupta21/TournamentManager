@@ -14,6 +14,7 @@ import { formByTeam as computeFormByTeam } from '@/lib/formGuide';
 import { qualificationScenarios } from '@/lib/qualification';
 import { toCsv, downloadCsv, slugify } from '@/lib/exportCsv';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 function exportStandings(groups, sport, tournamentName) {
   const isCricket = sport === 'cricket';
@@ -113,9 +114,14 @@ export default function StandingsPage() {
   const { data: standings = [], isLoading, isError, refetch, dataUpdatedAt, isFetching } = useStandings(tournamentId);
   const { data: fixtures = [], isLoading: fixturesLoading } = useFixtures(tournamentId);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches ? 'summary' : 'full'
-  );
+  const prefersSummary = useMediaQuery('(max-width: 639px)');
+  const [viewMode, setViewMode] = useState('full');
+  const [viewModeTouched, setViewModeTouched] = useState(false);
+
+  useEffect(() => {
+    if (viewModeTouched) return;
+    setViewMode(prefersSummary ? 'summary' : 'full');
+  }, [prefersSummary, viewModeTouched]);
 
   const groupsWithRows = useMemo(() => standings.filter((g) => g.rows.length), [standings]);
   const formMap = useMemo(() => computeFormByTeam(fixtures), [fixtures]);
@@ -234,7 +240,13 @@ export default function StandingsPage() {
         ) : (
           <span />
         )}
-        <ViewToggle value={viewMode} onChange={setViewMode} />
+        <ViewToggle
+          value={viewMode}
+          onChange={(next) => {
+            setViewModeTouched(true);
+            setViewMode(next);
+          }}
+        />
       </div>
 
       <div className={cn('grid gap-6', isAllGroups && 'lg:grid-cols-2')}>

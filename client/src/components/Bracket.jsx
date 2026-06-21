@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, MoveHorizontal } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { TeamCrest, EmptyState } from '@/components/ui/misc';
 import { celebrate } from '@/lib/celebrate';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 function Slot({ team, label, isWinner, dimmed }) {
@@ -51,7 +52,7 @@ function MatchupCard({ matchup, roundName, onPick }) {
       tabIndex={onPick ? undefined : -1}
       aria-label={onPick ? `View match details: ${aName} versus ${bName}` : undefined}
       className={cn(
-        'surface-elevated surface-interactive block w-60 overflow-hidden rounded-2xl border bg-card/80 text-left transition-colors',
+        'surface-elevated surface-interactive block w-full max-w-[min(18rem,88vw)] overflow-hidden rounded-2xl border bg-card/80 text-left transition-colors lg:w-60 lg:max-w-none',
         live ? 'border-destructive/50' : 'border-border/80',
         onPick && 'cursor-pointer hover:border-primary/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         !onPick && 'cursor-default'
@@ -77,6 +78,29 @@ function MatchupCard({ matchup, roundName, onPick }) {
       />
       </div>
     </motion.button>
+  );
+}
+
+function RoundColumn({ round, roundIndex, totalRounds, onPickMatchup, className, showConnectors = false }) {
+  return (
+    <div className={cn('flex flex-col', className)}>
+      <h4 className="mb-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        {round.roundName}
+      </h4>
+      <div className="flex flex-1 flex-col justify-around gap-4">
+        {round.matchups.map((m, mi) => (
+          <div key={mi} className="relative flex justify-center lg:block">
+            {showConnectors && roundIndex > 0 && (
+              <span className="pointer-events-none absolute right-full top-1/2 hidden h-px w-8 -translate-y-1/2 bg-gradient-to-l from-border to-transparent lg:block" />
+            )}
+            {showConnectors && roundIndex < totalRounds - 1 && (
+              <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-8 -translate-y-1/2 bg-gradient-to-r from-border to-transparent lg:block" />
+            )}
+            <MatchupCard matchup={m} roundName={round.roundName} onPick={onPickMatchup} />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -128,6 +152,12 @@ export default function Bracket({ bracket, onPickMatchup }) {
 
   const mainRounds = bracket.rounds.filter((r) => r.roundName !== 'Third-place playoff');
   const thirdPlace = bracket.rounds.find((r) => r.roundName === 'Third-place playoff');
+  const [activeRoundIdx, setActiveRoundIdx] = useState(0);
+
+  useEffect(() => {
+    if (!mainRounds.length) return;
+    if (activeRoundIdx >= mainRounds.length) setActiveRoundIdx(mainRounds.length - 1);
+  }, [activeRoundIdx, mainRounds.length]);
 
   const finalRound = mainRounds.find((r) => r.roundName === 'Final') ?? mainRounds[mainRounds.length - 1];
   const finalMatch = finalRound?.matchups?.[0];
@@ -140,37 +170,53 @@ export default function Bracket({ bracket, onPickMatchup }) {
     <div className="space-y-6">
       <ChampionBanner champion={champion} />
 
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground lg:hidden">
-        <MoveHorizontal className="h-3.5 w-3.5" /> Swipe to explore the bracket
-      </p>
+      {mainRounds.length > 1 && (
+        <div className="lg:hidden">
+          <Select value={String(activeRoundIdx)} onValueChange={(value) => setActiveRoundIdx(Number(value))}>
+            <SelectTrigger aria-label="Select bracket round" className="w-full sm:w-60">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {mainRounds.map((round, idx) => (
+                <SelectItem key={`${round.roundName}-${idx}`} value={String(idx)}>
+                  {round.roundName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-      <div className="overflow-x-auto rounded-2xl border border-border/65 bg-card/35 p-4 pb-4 scrollbar-thin">
+      <div className="lg:hidden">
+        {mainRounds[activeRoundIdx] && (
+          <RoundColumn
+            round={mainRounds[activeRoundIdx]}
+            roundIndex={activeRoundIdx}
+            totalRounds={mainRounds.length}
+            onPickMatchup={onPickMatchup}
+            className="mx-auto w-full max-w-[min(18rem,88vw)]"
+          />
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-2xl border border-border/65 bg-card/35 p-4 pb-4 scrollbar-thin lg:block">
         <div className="flex min-w-min gap-8">
           {mainRounds.map((round, ri) => (
-            <div key={ri} className="flex min-w-60 flex-col">
-              <h4 className="mb-4 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                {round.roundName}
-              </h4>
-              <div className="flex flex-1 flex-col justify-around gap-4">
-                {round.matchups.map((m, mi) => (
-                  <div key={mi} className="relative">
-                    {ri > 0 && (
-                      <span className="pointer-events-none absolute right-full top-1/2 h-px w-8 -translate-y-1/2 bg-gradient-to-l from-border to-transparent" />
-                    )}
-                    {ri < mainRounds.length - 1 && (
-                      <span className="pointer-events-none absolute left-full top-1/2 h-px w-8 -translate-y-1/2 bg-gradient-to-r from-border to-transparent" />
-                    )}
-                    <MatchupCard matchup={m} roundName={round.roundName} onPick={onPickMatchup} />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <RoundColumn
+              key={`${round.roundName}-${ri}`}
+              round={round}
+              roundIndex={ri}
+              totalRounds={mainRounds.length}
+              onPickMatchup={onPickMatchup}
+              showConnectors
+              className="min-w-60"
+            />
           ))}
         </div>
       </div>
 
       {thirdPlace?.matchups?.[0] && (
-        <div className="max-w-60">
+        <div className="mx-auto w-full max-w-[min(18rem,88vw)] lg:mx-0 lg:max-w-60">
           <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[hsl(var(--warning))]">
             Third-place playoff
           </h4>

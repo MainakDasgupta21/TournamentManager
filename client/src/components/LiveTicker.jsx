@@ -31,7 +31,7 @@ function TickerCell({ fixture, sport, live, tournamentId, duplicate }) {
       <TeamCrest team={fixture.teamB} size="sm" />
     </>
   );
-  const cls = 'flex shrink-0 items-center gap-2 border-r border-border/50 px-5 text-sm';
+  const cls = 'flex min-h-11 shrink-0 items-center gap-2 border-r border-border/50 px-3 text-sm sm:px-5';
   // The duplicated strip only exists to make the marquee seamless; hide it from
   // assistive tech and keyboard tab order so each match is announced once.
   if (tournamentId) {
